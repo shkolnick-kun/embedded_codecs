@@ -64,22 +64,13 @@ decompressed, and the resulting audio stored in post_g726.wav.
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <memory.h>
-#include <ctype.h>
-#include <sndfile.h>
+#include <string.h>
 
-#include "spandsp.h"
-#include "spandsp-sim.h"
+#include <g726.h>
 
-#define BLOCK_LEN           320
 #define MAX_TEST_VECTOR_LEN 40000
 
 #define TESTDATA_DIR        "../test-data/itu/g726/"
-
-#define IN_FILE_NAME        "../test-data/local/short_nb_voice.wav"
-#define OUT_FILE_NAME       "post_g726.wav"
 
 int16_t outdata[MAX_TEST_VECTOR_LEN];
 uint8_t adpcmdata[MAX_TEST_VECTOR_LEN];
@@ -1216,96 +1207,7 @@ static void itu_compliance_tests(void)
 
 int main(int argc, char *argv[])
 {
-    g726_state_t *enc_state;
-    g726_state_t *dec_state;
-    int opt;
-    bool itutests;
-    int bit_rate;
-    SNDFILE *inhandle;
-    SNDFILE *outhandle;
-    int16_t amp[1024];
-    int frames;
-    int adpcm;
-    int packing;
-
-    bit_rate = 32000;
-    itutests = true;
-    packing = G726_PACKING_NONE;
-    while ((opt = getopt(argc, argv, "b:LR")) != -1)
-    {
-        switch (opt)
-        {
-        case 'b':
-            bit_rate = atoi(optarg);
-            if (bit_rate != 16000  &&  bit_rate != 24000  &&  bit_rate != 32000  &&  bit_rate != 40000)
-            {
-                fprintf(stderr, "Invalid bit rate selected. Only 16000, 24000, 32000 and 40000 are valid.\n");
-                exit(2);
-            }
-            /*endif*/
-            itutests = false;
-            break;
-        case 'L':
-            packing = G726_PACKING_LEFT;
-            break;
-        case 'R':
-            packing = G726_PACKING_RIGHT;
-            break;
-        default:
-            //usage();
-            exit(2);
-        }
-        /*endswitch*/
-    }
-    /*endwhile*/
-
-    if (itutests)
-    {
-        itu_compliance_tests();
-    }
-    else
-    {
-        if ((inhandle = sf_open_telephony_read(IN_FILE_NAME, 1)) == NULL)
-        {
-            fprintf(stderr, "    Cannot open audio file '%s'\n", IN_FILE_NAME);
-            exit(2);
-        }
-        /*endif*/
-        if ((outhandle = sf_open_telephony_write(OUT_FILE_NAME, 1)) == NULL)
-        {
-            fprintf(stderr, "    Cannot create audio file '%s'\n", OUT_FILE_NAME);
-            exit(2);
-        }
-        /*endif*/
-
-        printf("ADPCM packing is %d\n", packing);
-        enc_state = g726_init(NULL, bit_rate, G726_ENCODING_LINEAR, packing);
-        dec_state = g726_init(NULL, bit_rate, G726_ENCODING_LINEAR, packing);
-
-        while ((frames = sf_readf_short(inhandle, amp, 159)))
-        {
-            adpcm = g726_encode(enc_state, adpcmdata, amp, frames);
-            frames = g726_decode(dec_state, amp, adpcmdata, adpcm);
-            sf_writef_short(outhandle, amp, frames);
-        }
-        /*endwhile*/
-        if (sf_close_telephony(inhandle))
-        {
-            printf("    Cannot close audio file '%s'\n", IN_FILE_NAME);
-            exit(2);
-        }
-        /*endif*/
-        if (sf_close_telephony(outhandle))
-        {
-            printf("    Cannot close audio file '%s'\n", OUT_FILE_NAME);
-            exit(2);
-        }
-        /*endif*/
-        printf("'%s' transcoded to '%s' at %dbps.\n", IN_FILE_NAME, OUT_FILE_NAME, bit_rate);
-        g726_free(enc_state);
-        g726_free(dec_state);
-    }
-    /*endif*/
+    itu_compliance_tests();
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

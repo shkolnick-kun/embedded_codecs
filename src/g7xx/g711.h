@@ -25,7 +25,7 @@ these routines are slow in C, is the lack of direct access to the CPU's "find
 the first 1" instruction. A little in-line assembler fixes that, and the
 conversion routines can be faster than lookup tables, in most real world usage.
 A "find the first 1" instruction is available on most modern CPUs, and is a
-much underused feature. 
+much underused feature.
 
 If an assembly language method of bit searching is not available, these routines
 revert to a method that can be a little slow, so the cache thrashing might not
@@ -46,15 +46,18 @@ specification by other means.
 extern "C" {
 #endif
 
-#ifdef _MSC_VER
-#ifndef __inline__
-#define __inline__ __inline
-#endif
-typedef unsigned __int8 uint8_t;
-typedef __int16 int16_t;
-typedef __int32 int32_t;
-typedef unsigned __int16 uint16_t;
-#endif
+#include <stdint.h>
+
+//
+//#ifdef _MSC_VER
+//#ifndef __inline__
+//#define __inline__ __inline
+//#endif
+//typedef unsigned __int8 uint8_t;
+//typedef __int16 int16_t;
+//typedef __int32 int32_t;
+//typedef unsigned __int16 uint16_t;
+//#endif
 
 #if defined(__i386__)
 /*! \brief Find the bit position of the highest set bit in a word
@@ -114,7 +117,7 @@ static __inline__ int bottom_bit(unsigned int bits)
 static __inline__ int top_bit(unsigned int bits)
 {
     int i;
-    
+
     if (bits == 0)
         return -1;
     i = 0;
@@ -150,7 +153,7 @@ static __inline__ int top_bit(unsigned int bits)
 static __inline__ int bottom_bit(unsigned int bits)
 {
     int i;
-    
+
     if (bits == 0)
         return -1;
     i = 32;
@@ -194,7 +197,7 @@ static __inline__ int bottom_bit(unsigned int bits)
  *      segment, but a little inline assembly can fix that on an i386, x86_64 and
  *      many other modern processors.
  */
- 
+
 /*
  * Mu-law is basically as follows:
  *
@@ -272,7 +275,7 @@ static __inline__ uint8_t linear_to_ulaw(int linear)
 static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
 {
     int t;
-    
+
     /* Complement to obtain normal u-law value. */
     ulaw = ~ulaw;
     /*
@@ -312,7 +315,7 @@ static __inline__ uint8_t linear_to_alaw(int linear)
 {
     int mask;
     int seg;
-    
+
     if (linear >= 0)
     {
         /* Sign (bit 7) bit = 1 */

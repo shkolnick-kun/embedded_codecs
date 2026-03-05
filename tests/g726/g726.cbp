@@ -18,7 +18,23 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add directory="../../src/g7xx" />
 		</Compiler>
+		<Unit filename="../../src/g7xx/g711.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/g7xx/g711.h" />
+		<Unit filename="../../src/g7xx/g722.h" />
+		<Unit filename="../../src/g7xx/g722_decode.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/g7xx/g722_encode.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/g7xx/g726.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/g7xx/g726.h" />
 		<Unit filename="g726_tests.c">
 			<Option compilerVar="CC" />
 		</Unit>

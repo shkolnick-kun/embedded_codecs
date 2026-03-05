@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2005 Steve Underwood
  *
- *  Despite my general liking of the GPL, I place my own contributions 
+ *  Despite my general liking of the GPL, I place my own contributions
  *  to this code in the public domain for the benefit of all mankind -
  *  even the slimy ones who might try to proprietize my work and use it
  *  to my detriment.
@@ -27,21 +27,23 @@
 #if !defined(_G722_H_)
 #define _G722_H_
 
-#ifdef _MSC_VER
-#ifndef __inline__
-#define __inline__ __inline
-#endif
-typedef unsigned __int8 uint8_t;
-typedef __int16 int16_t;
-typedef __int32 int32_t;
-typedef unsigned __int16 uint16_t;
-#ifndef INT16_MAX
-#define  INT16_MAX   0x7fff 
-#endif
-#ifndef INT16_MIN
-#define  INT16_MIN   (-INT16_MAX - 1) 
-#endif
-#endif
+#include <stdint.h>
+
+//#ifdef _MSC_VER
+//#ifndef __inline__
+//#define __inline__ __inline
+//#endif
+//typedef unsigned __int8 uint8_t;
+//typedef __int16 int16_t;
+//typedef __int32 int32_t;
+//typedef unsigned __int16 uint16_t;
+//#ifndef INT16_MAX
+//#define  INT16_MAX   0x7fff
+//#endif
+//#ifndef INT16_MIN
+//#define  INT16_MIN   (-INT16_MAX - 1)
+//#endif
+//#endif
 
 /*! \page g722_page G.722 encoding and decoding
 \section g722_page_sec_1 What does it do?
@@ -131,7 +133,7 @@ typedef struct
         int nb;
         int det;
     } band[2];
-    
+
     unsigned int in_buffer;
     int in_bits;
     unsigned int out_buffer;

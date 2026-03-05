@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2006 Steve Underwood
  *
- *  Despite my general liking of the GPL, I place my own contributions 
+ *  Despite my general liking of the GPL, I place my own contributions
  *  to this code in the public domain for the benefit of all mankind -
  *  even the slimy ones who might try to proprietize my work and use it
  *  to my detriment.
@@ -46,15 +46,17 @@
 #if !defined(_G726_H_)
 #define _G726_H_
 
-#ifdef _MSC_VER
-#ifndef __inline__
-#define __inline__ __inline
-#endif
-typedef unsigned __int8 uint8_t;
-typedef __int16 int16_t;
-typedef __int32 int32_t;
-typedef unsigned __int16 uint16_t;
-#endif
+#include <stdint.h>
+
+//#ifdef _MSC_VER
+//#ifndef __inline__
+//#define __inline__ __inline
+//#endif
+//typedef unsigned __int8 uint8_t;
+//typedef __int16 int16_t;
+//typedef __int32 int32_t;
+//typedef unsigned __int16 uint16_t;
+//#endif
 
 /*! \page g726_page G.726 encoding and decoding
 \section g726_page_sec_1 What does it do?
@@ -121,7 +123,7 @@ typedef struct g726_state_s
     int16_t dml;
     /*! Linear weighting coefficient of 'yl' and 'yu'. */
     int16_t ap;
-    
+
     /*! Coefficients of pole portion of prediction filter. */
     int16_t a[2];
     /*! Coefficients of zero portion of prediction filter. */
@@ -136,7 +138,7 @@ typedef struct g726_state_s
     int16_t sr[2];
     /*! Delayed tone detect */
     int td;
-    
+
     unsigned int in_buffer;
     int in_bits;
     unsigned int out_buffer;
