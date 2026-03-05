@@ -48,61 +48,6 @@ extern "C" {
 
 #include <stdint.h>
 
-#if defined(__i386__)
-/*! \brief Find the bit position of the highest set bit in a word
-    \param bits The word to be searched
-    \return The bit number of the highest set bit, or -1 if the word is zero. */
-static inline int top_bit(unsigned int bits)
-{
-    int res;
-
-    __asm__ __volatile__(" movl $-1,%%edx;\n"
-                         " bsrl %%eax,%%edx;\n"
-                         : "=d" (res)
-                         : "a" (bits));
-    return res;
-}
-/*- End of function --------------------------------------------------------*/
-
-/*! \brief Find the bit position of the lowest set bit in a word
-    \param bits The word to be searched
-    \return The bit number of the lowest set bit, or -1 if the word is zero. */
-static inline int bottom_bit(unsigned int bits)
-{
-    int res;
-
-    __asm__ __volatile__(" movl $-1,%%edx;\n"
-                         " bsfl %%eax,%%edx;\n"
-                         : "=d" (res)
-                         : "a" (bits));
-    return res;
-}
-/*- End of function --------------------------------------------------------*/
-#elif defined(__x86_64__)
-static inline int top_bit(unsigned int bits)
-{
-    int res;
-
-    __asm__ __volatile__(" movq $-1,%%rdx;\n"
-                         " bsrq %%rax,%%rdx;\n"
-                         : "=d" (res)
-                         : "a" (bits));
-    return res;
-}
-/*- End of function --------------------------------------------------------*/
-
-static inline int bottom_bit(unsigned int bits)
-{
-    int res;
-
-    __asm__ __volatile__(" movq $-1,%%rdx;\n"
-                         " bsfq %%rax,%%rdx;\n"
-                         : "=d" (res)
-                         : "a" (bits));
-    return res;
-}
-/*- End of function --------------------------------------------------------*/
-#else
 static inline int top_bit(unsigned int bits)
 {
     int i;
@@ -174,7 +119,6 @@ static inline int bottom_bit(unsigned int bits)
     return i;
 }
 /*- End of function --------------------------------------------------------*/
-#endif
 
 /* N.B. It is tempting to use look-up tables for A-law and u-law conversion.
  *      However, you should consider the cache footprint.

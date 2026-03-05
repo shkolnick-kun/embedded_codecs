@@ -17,7 +17,9 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-Wextra" />
 			<Add option="-Wall" />
+			<Add option="-std=c99" />
 			<Add directory="../../src/g7xx" />
 		</Compiler>
 		<Unit filename="../../src/g7xx/g711.c">
