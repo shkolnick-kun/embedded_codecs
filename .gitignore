@@ -88,6 +88,9 @@ __pycache__/
 ########
 doc/doxygen/html/**
 
+# Test data #
+tests/test-data/itu/g726/DISK*
+
 # Specific files #
 ##################
 
