@@ -54,14 +54,14 @@ static inline int16_t saturate(int32_t amp)
 }
 /*- End of function --------------------------------------------------------*/
 
-static void block4(g722_decode_state_t *s, int band, int d);
+static void block4(g722_decode_state_t *s, int32_t band, int32_t d);
 
-static void block4(g722_decode_state_t *s, int band, int d)
+static void block4(g722_decode_state_t *s, int32_t band, int32_t d)
 {
-    int wd1;
-    int wd2;
-    int wd3;
-    int i;
+    int32_t wd1;
+    int32_t wd2;
+    int32_t wd3;
+    int32_t i;
 
     /* Block 4, RECONS */
     s->band[band].d[0] = d;
@@ -146,7 +146,7 @@ static void block4(g722_decode_state_t *s, int band, int d)
 }
 /*- End of function --------------------------------------------------------*/
 
-g722_decode_state_t *g722_decode_init(g722_decode_state_t *s, int rate, int options)
+g722_decode_state_t *g722_decode_init(g722_decode_state_t *s, int32_t rate, int32_t options)
 {
     if (s == NULL)
     {
@@ -172,18 +172,18 @@ g722_decode_state_t *g722_decode_init(g722_decode_state_t *s, int rate, int opti
 }
 /*- End of function --------------------------------------------------------*/
 
-int g722_decode_release(g722_decode_state_t *s)
+int32_t g722_decode_release(g722_decode_state_t *s)
 {
     free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
 
-int g722_decode(g722_decode_state_t *s, int16_t amp[], const uint8_t g722_data[], int len)
+int32_t g722_decode(g722_decode_state_t *s, int16_t amp[], const uint8_t g722_data[], int32_t len)
 {
-    static const int wl[8] = {-60, -30, 58, 172, 334, 538, 1198, 3042 };
-    static const int rl42[16] = {0, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3,  2, 1, 0 };
-    static const int ilb[32] =
+    static const int32_t wl[8] = {-60, -30, 58, 172, 334, 538, 1198, 3042 };
+    static const int32_t rl42[16] = {0, 7, 6, 5, 4, 3, 2, 1, 7, 6, 5, 4, 3,  2, 1, 0 };
+    static const int32_t ilb[32] =
     {
         2048, 2093, 2139, 2186, 2233, 2282, 2332,
         2383, 2435, 2489, 2543, 2599, 2656, 2714,
@@ -191,17 +191,17 @@ int g722_decode(g722_decode_state_t *s, int16_t amp[], const uint8_t g722_data[]
         3228, 3298, 3371, 3444, 3520, 3597, 3676,
         3756, 3838, 3922, 4008
     };
-    static const int wh[3] = {0, -214, 798};
-    static const int rh2[4] = {2, 1, 2, 1};
-    static const int qm2[4] = {-7408, -1616,  7408,   1616};
-    static const int qm4[16] =
+    static const int32_t wh[3] = {0, -214, 798};
+    static const int32_t rh2[4] = {2, 1, 2, 1};
+    static const int32_t qm2[4] = {-7408, -1616,  7408,   1616};
+    static const int32_t qm4[16] =
     {
               0, -20456, -12896,  -8968,
           -6288,  -4240,  -2584,  -1200,
           20456,  12896,   8968,   6288,
            4240,   2584,   1200,      0
     };
-    static const int qm5[32] =
+    static const int32_t qm5[32] =
     {
            -280,   -280, -23352, -17560,
          -14120, -11664,  -9752,  -8184,
@@ -212,7 +212,7 @@ int g722_decode(g722_decode_state_t *s, int16_t amp[], const uint8_t g722_data[]
            4696,   3784,   2960,   2208,
            1520,    880,    280,   -280
     };
-    static const int qm6[64] =
+    static const int32_t qm6[64] =
     {
            -136,   -136,   -136,   -136,
          -24808, -21904, -19008, -16704,
@@ -231,25 +231,25 @@ int g722_decode(g722_decode_state_t *s, int16_t amp[], const uint8_t g722_data[]
            1688,   1360,   1040,    728,
             432,    136,   -432,   -136
     };
-    static const int qmf_coeffs[12] =
+    static const int32_t qmf_coeffs[12] =
     {
            3,  -11,   12,   32, -210,  951, 3876, -805,  362, -156,   53,  -11,
     };
 
-    int dlowt;
-    int rlow;
-    int ihigh;
-    int dhigh;
-    int rhigh;
-    int xout1;
-    int xout2;
-    int wd1;
-    int wd2;
-    int wd3;
-    int code;
-    int outlen;
-    int i;
-    int j;
+    int32_t dlowt;
+    int32_t rlow;
+    int32_t ihigh;
+    int32_t dhigh;
+    int32_t rhigh;
+    int32_t xout1;
+    int32_t xout2;
+    int32_t wd1;
+    int32_t wd2;
+    int32_t wd3;
+    int32_t code;
+    int32_t outlen;
+    int32_t i;
+    int32_t j;
 
     outlen = 0;
     rhigh = 0;

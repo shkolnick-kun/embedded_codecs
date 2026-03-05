@@ -48,9 +48,9 @@ extern "C" {
 
 #include <stdint.h>
 
-static inline int top_bit(unsigned int bits)
+static inline int32_t top_bit(uint32_t bits)
 {
-    int i;
+    int32_t i;
 
     if (bits == 0)
         return -1;
@@ -84,9 +84,9 @@ static inline int top_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 
-static inline int bottom_bit(unsigned int bits)
+static inline int32_t bottom_bit(uint32_t bits)
 {
-    int i;
+    int32_t i;
 
     if (bits == 0)
         return -1;
@@ -164,11 +164,11 @@ static inline int bottom_bit(unsigned int bits)
     \param linear The sample to encode.
     \return The u-law value.
 */
-static inline uint8_t linear_to_ulaw(int linear)
+static inline uint8_t linear_to_ulaw(int32_t linear)
 {
     uint8_t u_val;
-    int mask;
-    int seg;
+    int32_t mask;
+    int32_t seg;
 
     /* Get the sign and the magnitude of the value. */
     if (linear < 0)
@@ -207,7 +207,7 @@ static inline uint8_t linear_to_ulaw(int linear)
 */
 static inline int16_t ulaw_to_linear(uint8_t ulaw)
 {
-    int t;
+    int32_t t;
 
     /* Complement to obtain normal u-law value. */
     ulaw = ~ulaw;
@@ -215,7 +215,7 @@ static inline int16_t ulaw_to_linear(uint8_t ulaw)
      * Extract and bias the quantization bits. Then
      * shift up by the segment number and subtract out the bias.
      */
-    t = (((ulaw & 0x0F) << 3) + ULAW_BIAS) << (((int) ulaw & 0x70) >> 4);
+    t = (((ulaw & 0x0F) << 3) + ULAW_BIAS) << (((int32_t) ulaw & 0x70) >> 4);
     return  (int16_t) ((ulaw & 0x80)  ?  (ULAW_BIAS - t)  :  (t - ULAW_BIAS));
 }
 /*- End of function --------------------------------------------------------*/
@@ -244,10 +244,10 @@ static inline int16_t ulaw_to_linear(uint8_t ulaw)
     \param linear The sample to encode.
     \return The A-law value.
 */
-static inline uint8_t linear_to_alaw(int linear)
+static inline uint8_t linear_to_alaw(int32_t linear)
 {
-    int mask;
-    int seg;
+    int32_t mask;
+    int32_t seg;
 
     if (linear >= 0)
     {
@@ -284,12 +284,12 @@ static inline uint8_t linear_to_alaw(int linear)
 */
 static inline int16_t alaw_to_linear(uint8_t alaw)
 {
-    int i;
-    int seg;
+    int32_t i;
+    int32_t seg;
 
     alaw ^= ALAW_AMI_MASK;
     i = ((alaw & 0x0F) << 4);
-    seg = (((int) alaw & 0x70) >> 4);
+    seg = (((int32_t) alaw & 0x70) >> 4);
     if (seg)
         i = (i + 0x108) << (seg - 1);
     else

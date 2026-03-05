@@ -95,13 +95,13 @@ typedef uint8_t (*g726_encoder_func_t)(struct g726_state_s *s, int16_t amp);
 typedef struct g726_state_s
 {
     /*! The bit rate */
-    int rate;
+    int32_t rate;
     /*! The external coding, for tandem operation */
-    int ext_coding;
+    int32_t ext_coding;
     /*! The number of bits per sample */
-    int bits_per_sample;
+    int32_t bits_per_sample;
     /*! One fo the G.726_PACKING_xxx options */
-    int packing;
+    int32_t packing;
 
     /*! Locked or steady state step size multiplier. */
     int32_t yl;
@@ -127,12 +127,12 @@ typedef struct g726_state_s
         internal floating point format. */
     int16_t sr[2];
     /*! Delayed tone detect */
-    int td;
+    int32_t td;
 
-    unsigned int in_buffer;
-    int in_bits;
-    unsigned int out_buffer;
-    int out_bits;
+    uint32_t in_buffer;
+    int32_t in_bits;
+    uint32_t out_buffer;
+    int32_t out_bits;
 
     g726_encoder_func_t enc_func;
     g726_decoder_func_t dec_func;
@@ -149,12 +149,12 @@ extern "C" {
     \param ext_coding The coding used outside G.726.
     \param packing One of the G.726_PACKING_xxx options.
     \return A pointer to the G.726 context, or NULL for error. */
-g726_state_t *g726_init(g726_state_t *s, int bit_rate, int ext_coding, int packing);
+g726_state_t *g726_init(g726_state_t *s, int32_t bit_rate, int32_t ext_coding, int32_t packing);
 
 /*! Free a G.726 encode or decode context.
     \param s The G.726 context.
     \return 0 for OK. */
-int g726_release(g726_state_t *s);
+int32_t g726_release(g726_state_t *s);
 
 /*! Decode a buffer of G.726 ADPCM data to linear PCM, a-law or u-law.
     \param s The G.726 context.
@@ -162,10 +162,10 @@ int g726_release(g726_state_t *s);
     \param g726_data
     \param g726_bytes
     \return The number of samples returned. */
-int g726_decode(g726_state_t *s,
+int32_t g726_decode(g726_state_t *s,
                 int16_t amp[],
                 const uint8_t g726_data[],
-                int g726_bytes);
+                int32_t g726_bytes);
 
 /*! Encode a buffer of linear PCM data to G.726 ADPCM.
     \param s The G.726 context.
@@ -173,10 +173,10 @@ int g726_decode(g726_state_t *s,
     \param amp
     \param samples
     \return The number of bytes of G.726 data produced. */
-int g726_encode(g726_state_t *s,
+int32_t g726_encode(g726_state_t *s,
                 uint8_t g726_data[],
                 const int16_t amp[],
-                int samples);
+                int32_t samples);
 
 #ifdef __cplusplus
 }

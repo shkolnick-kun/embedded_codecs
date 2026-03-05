@@ -52,89 +52,89 @@ typedef struct
 {
     /*! TRUE if the operating in the special ITU test mode, with the band split filters
              disabled. */
-    int itu_test_mode;
+    int32_t itu_test_mode;
     /*! TRUE if the G.722 data is packed */
-    int packed;
+    int32_t packed;
     /*! TRUE if encode from 8k samples/second */
-    int eight_k;
+    int32_t eight_k;
     /*! 6 for 48000kbps, 7 for 56000kbps, or 8 for 64000kbps. */
-    int bits_per_sample;
+    int32_t bits_per_sample;
 
     /*! Signal history for the QMF */
-    int x[24];
+    int32_t x[24];
 
     struct
     {
-        int s;
-        int sp;
-        int sz;
-        int r[3];
-        int a[3];
-        int ap[3];
-        int p[3];
-        int d[7];
-        int b[7];
-        int bp[7];
-        int sg[7];
-        int nb;
-        int det;
+        int32_t s;
+        int32_t sp;
+        int32_t sz;
+        int32_t r[3];
+        int32_t a[3];
+        int32_t ap[3];
+        int32_t p[3];
+        int32_t d[7];
+        int32_t b[7];
+        int32_t bp[7];
+        int32_t sg[7];
+        int32_t nb;
+        int32_t det;
     } band[2];
 
-    unsigned int in_buffer;
-    int in_bits;
-    unsigned int out_buffer;
-    int out_bits;
+    uint32_t in_buffer;
+    int32_t in_bits;
+    uint32_t out_buffer;
+    int32_t out_bits;
 } g722_encode_state_t;
 
 typedef struct
 {
     /*! TRUE if the operating in the special ITU test mode, with the band split filters
              disabled. */
-    int itu_test_mode;
+    int32_t itu_test_mode;
     /*! TRUE if the G.722 data is packed */
-    int packed;
+    int32_t packed;
     /*! TRUE if decode to 8k samples/second */
-    int eight_k;
+    int32_t eight_k;
     /*! 6 for 48000kbps, 7 for 56000kbps, or 8 for 64000kbps. */
-    int bits_per_sample;
+    int32_t bits_per_sample;
 
     /*! Signal history for the QMF */
-    int x[24];
+    int32_t x[24];
 
     struct
     {
-        int s;
-        int sp;
-        int sz;
-        int r[3];
-        int a[3];
-        int ap[3];
-        int p[3];
-        int d[7];
-        int b[7];
-        int bp[7];
-        int sg[7];
-        int nb;
-        int det;
+        int32_t s;
+        int32_t sp;
+        int32_t sz;
+        int32_t r[3];
+        int32_t a[3];
+        int32_t ap[3];
+        int32_t p[3];
+        int32_t d[7];
+        int32_t b[7];
+        int32_t bp[7];
+        int32_t sg[7];
+        int32_t nb;
+        int32_t det;
     } band[2];
 
-    unsigned int in_buffer;
-    int in_bits;
-    unsigned int out_buffer;
-    int out_bits;
+    uint32_t in_buffer;
+    int32_t in_bits;
+    uint32_t out_buffer;
+    int32_t out_bits;
 } g722_decode_state_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-g722_encode_state_t *g722_encode_init(g722_encode_state_t *s, int rate, int options);
-int g722_encode_release(g722_encode_state_t *s);
-int g722_encode(g722_encode_state_t *s, uint8_t g722_data[], const int16_t amp[], int len);
+g722_encode_state_t *g722_encode_init(g722_encode_state_t *s, int32_t rate, int32_t options);
+int32_t g722_encode_release(g722_encode_state_t *s);
+int32_t g722_encode(g722_encode_state_t *s, uint8_t g722_data[], const int16_t amp[], int32_t len);
 
-g722_decode_state_t *g722_decode_init(g722_decode_state_t *s, int rate, int options);
-int g722_decode_release(g722_decode_state_t *s);
-int g722_decode(g722_decode_state_t *s, int16_t amp[], const uint8_t g722_data[], int len);
+g722_decode_state_t *g722_decode_init(g722_decode_state_t *s, int32_t rate, int32_t options);
+int32_t g722_decode_release(g722_decode_state_t *s);
+int32_t g722_decode(g722_decode_state_t *s, int16_t amp[], const uint8_t g722_data[], int32_t len);
 
 #ifdef __cplusplus
 }

@@ -67,13 +67,13 @@
  * Maps G.726_16 code word to reconstructed scale factor normalized log
  * magnitude values.
  */
-static const int g726_16_dqlntab[4] =
+static const int32_t g726_16_dqlntab[4] =
 {
     116, 365, 365, 116
 };
 
 /* Maps G.726_16 code word to log of scale factor multiplier. */
-static const int g726_16_witab[4] =
+static const int32_t g726_16_witab[4] =
 {
     -704, 14048, 14048, -704
 };
@@ -83,12 +83,12 @@ static const int g726_16_witab[4] =
  * term averages are computed and then compared to give an indication
  * how stationary (steady state) the signal is.
  */
-static const int g726_16_fitab[4] =
+static const int32_t g726_16_fitab[4] =
 {
     0x000, 0xE00, 0xE00, 0x000
 };
 
-static const int qtab_726_16[1] =
+static const int32_t qtab_726_16[1] =
 {
     261
 };
@@ -97,13 +97,13 @@ static const int qtab_726_16[1] =
  * Maps G.726_24 code word to reconstructed scale factor normalized log
  * magnitude values.
  */
-static const int g726_24_dqlntab[8] =
+static const int32_t g726_24_dqlntab[8] =
 {
     -2048, 135, 273, 373, 373, 273, 135, -2048
 };
 
 /* Maps G.726_24 code word to log of scale factor multiplier. */
-static const int g726_24_witab[8] =
+static const int32_t g726_24_witab[8] =
 {
     -128, 960, 4384, 18624, 18624, 4384, 960, -128
 };
@@ -113,12 +113,12 @@ static const int g726_24_witab[8] =
  * term averages are computed and then compared to give an indication
  * how stationary (steady state) the signal is.
  */
-static const int g726_24_fitab[8] =
+static const int32_t g726_24_fitab[8] =
 {
     0x000, 0x200, 0x400, 0xE00, 0xE00, 0x400, 0x200, 0x000
 };
 
-static const int qtab_726_24[3] =
+static const int32_t qtab_726_24[3] =
 {
     8, 218, 331
 };
@@ -127,14 +127,14 @@ static const int qtab_726_24[3] =
  * Maps G.726_32 code word to reconstructed scale factor normalized log
  * magnitude values.
  */
-static const int g726_32_dqlntab[16] =
+static const int32_t g726_32_dqlntab[16] =
 {
     -2048,   4, 135, 213, 273, 323, 373,   425,
       425, 373, 323, 273, 213, 135,   4, -2048
 };
 
 /* Maps G.726_32 code word to log of scale factor multiplier. */
-static const int g726_32_witab[16] =
+static const int32_t g726_32_witab[16] =
 {
      -384,   576,  1312,  2048,  3584,  6336, 11360, 35904,
     35904, 11360,  6336,  3584,  2048,  1312,   576,  -384
@@ -145,13 +145,13 @@ static const int g726_32_witab[16] =
  * term averages are computed and then compared to give an indication
  * how stationary (steady state) the signal is.
  */
-static const int g726_32_fitab[16] =
+static const int32_t g726_32_fitab[16] =
 {
     0x000, 0x000, 0x000, 0x200, 0x200, 0x200, 0x600, 0xE00,
     0xE00, 0x600, 0x200, 0x200, 0x200, 0x000, 0x000, 0x000
 };
 
-static const int qtab_726_32[7] =
+static const int32_t qtab_726_32[7] =
 {
     -124, 80, 178, 246, 300, 349, 400
 };
@@ -160,7 +160,7 @@ static const int qtab_726_32[7] =
  * Maps G.726_40 code word to ructeconstructed scale factor normalized log
  * magnitude values.
  */
-static const int g726_40_dqlntab[32] =
+static const int32_t g726_40_dqlntab[32] =
 {
     -2048, -66, 28, 104, 169, 224, 274, 318,
       358, 395, 429, 459, 488, 514, 539, 566,
@@ -169,7 +169,7 @@ static const int g726_40_dqlntab[32] =
 };
 
 /* Maps G.726_40 code word to log of scale factor multiplier. */
-static const int g726_40_witab[32] =
+static const int32_t g726_40_witab[32] =
 {
       448,   448,   768,  1248,  1280,  1312,  1856,  3200,
      4512,  5728,  7008,  8960, 11456, 14080, 16928, 22272,
@@ -182,7 +182,7 @@ static const int g726_40_witab[32] =
  * term averages are computed and then compared to give an indication
  * how stationary (steady state) the signal is.
  */
-static const int g726_40_fitab[32] =
+static const int32_t g726_40_fitab[32] =
 {
     0x000, 0x000, 0x000, 0x000, 0x000, 0x200, 0x200, 0x200,
     0x200, 0x200, 0x400, 0x600, 0x800, 0xA00, 0xC00, 0xC00,
@@ -190,7 +190,7 @@ static const int g726_40_fitab[32] =
     0x200, 0x200, 0x200, 0x000, 0x000, 0x000, 0x000, 0x000
 };
 
-static const int qtab_726_40[15] =
+static const int32_t qtab_726_40[15] =
 {
     -122, -16,  68, 139, 198, 250, 298, 339,
      378, 413, 445, 475, 502, 528, 553
@@ -226,8 +226,8 @@ static int16_t fmult(int16_t an, int16_t srn)
  */
 static inline int16_t predictor_zero(g726_state_t *s)
 {
-    int i;
-    int sezi;
+    int32_t i;
+    int32_t sezi;
 
     sezi = fmult(s->b[0] >> 2, s->dq[0]);
     /* ACCUM */
@@ -249,11 +249,11 @@ static inline int16_t predictor_pole(g726_state_t *s)
 /*
  * Computes the quantization step size of the adaptive quantizer.
  */
-static int step_size(g726_state_t *s)
+static int32_t step_size(g726_state_t *s)
 {
-    int y;
-    int dif;
-    int al;
+    int32_t y;
+    int32_t dif;
+    int32_t al;
 
     if (s->ap >= 256)
         return s->yu;
@@ -275,18 +275,18 @@ static int step_size(g726_state_t *s)
  * size scale factor division operation is done in the log base 2 domain
  * as a subtraction.
  */
-static int16_t quantize(int d,                  /* Raw difference signal sample */
-                        int y,                  /* Step size multiplier */
-                        const int table[],     /* quantization table */
-                        int quantizer_states)   /* table size of int16_t integers */
+static int16_t quantize(int32_t d,                  /* Raw difference signal sample */
+                        int32_t y,                  /* Step size multiplier */
+                        const int32_t table[],     /* quantization table */
+                        int32_t quantizer_states)   /* table size of int16_t integers */
 {
     int16_t dqm;    /* Magnitude of 'd' */
     int16_t exp;    /* Integer part of base 2 log of 'd' */
     int16_t mant;   /* Fractional part of base 2 log */
     int16_t dl;     /* Log of magnitude of 'd' */
     int16_t dln;    /* Step size scale factor normalized log */
-    int i;
-    int size;
+    int32_t i;
+    int32_t size;
 
     /*
      * LOG
@@ -337,9 +337,9 @@ static int16_t quantize(int d,                  /* Raw difference signal sample 
  * codeword 'i' and quantization step size scale factor 'y'.
  * Multiplication is performed in log base 2 domain as addition.
  */
-static int16_t reconstruct(int sign,    /* 0 for non-negative value */
-                           int dqln,    /* G.72x codeword */
-                           int y)       /* Step size multiplier */
+static int16_t reconstruct(int32_t sign,    /* 0 for non-negative value */
+                           int32_t dqln,    /* G.72x codeword */
+                           int32_t y)       /* Step size multiplier */
 {
     int16_t dql;    /* Log of 'dq' magnitude */
     int16_t dex;    /* Integer part of log */
@@ -362,12 +362,12 @@ static int16_t reconstruct(int sign,    /* 0 for non-negative value */
  * updates the state variables for each output code
  */
 static void update(g726_state_t *s,
-                   int y,       /* quantizer step size */
-                   int wi,      /* scale factor multiplier */
-                   int fi,      /* for long/short term energies */
-                   int dq,      /* quantized prediction difference */
-                   int sr,      /* reconstructed signal */
-                   int dqsez)   /* difference from 2-pole predictor */
+                   int32_t y,       /* quantizer step size */
+                   int32_t wi,      /* scale factor multiplier */
+                   int32_t fi,      /* for long/short term energies */
+                   int32_t dq,      /* quantized prediction difference */
+                   int32_t sr,      /* reconstructed signal */
+                   int32_t dqsez)   /* difference from 2-pole predictor */
 {
     int16_t mag;
     int16_t exp;
@@ -380,8 +380,8 @@ static void update(g726_state_t *s,
     int16_t ylfrac;
     int16_t thr;
     int16_t pk0;
-    int i;
-    int tr;
+    int32_t i;
+    int32_t tr;
 
     a2p = 0;
     /* Needed in updating predictor poles */
@@ -577,17 +577,17 @@ static void update(g726_state_t *s,
 /*- End of function --------------------------------------------------------*/
 
 static int16_t tandem_adjust_alaw(int16_t sr,   /* decoder output linear PCM sample */
-                                  int se,       /* predictor estimate sample */
-                                  int y,        /* quantizer step size */
-                                  int i,        /* decoder input code */
-                                  int sign,
-                                  const int qtab[],
-                                  int quantizer_states)
+                                  int32_t se,       /* predictor estimate sample */
+                                  int32_t y,        /* quantizer step size */
+                                  int32_t i,        /* decoder input code */
+                                  int32_t sign,
+                                  const int32_t qtab[],
+                                  int32_t quantizer_states)
 {
     uint8_t sp; /* A-law compressed 8-bit code */
     int16_t dx; /* prediction error */
-    int id;     /* quantized prediction error */
-    int sd;     /* adjusted A-law decoded sample value */
+    int32_t id;     /* quantized prediction error */
+    int32_t sd;     /* adjusted A-law decoded sample value */
 
     if (sr <= -32768)
         sr = -1;
@@ -624,17 +624,17 @@ static int16_t tandem_adjust_alaw(int16_t sr,   /* decoder output linear PCM sam
 /*- End of function --------------------------------------------------------*/
 
 static int16_t tandem_adjust_ulaw(int16_t sr,   /* decoder output linear PCM sample */
-                                  int se,       /* predictor estimate sample */
-                                  int y,        /* quantizer step size */
-                                  int i,        /* decoder input code */
-                                  int sign,
-                                  const int qtab[],
-                                  int quantizer_states)
+                                  int32_t se,       /* predictor estimate sample */
+                                  int32_t y,        /* quantizer step size */
+                                  int32_t i,        /* decoder input code */
+                                  int32_t sign,
+                                  const int32_t qtab[],
+                                  int32_t quantizer_states)
 {
     uint8_t sp; /* u-law compressed 8-bit code */
     int16_t dx; /* prediction error */
-    int id;     /* quantized prediction error */
-    int sd;     /* adjusted u-law decoded sample value */
+    int32_t id;     /* quantized prediction error */
+    int32_t sd;     /* adjusted u-law decoded sample value */
 
     if (sr <= -32768)
         sr = 0;
@@ -674,7 +674,7 @@ static int16_t tandem_adjust_ulaw(int16_t sr,   /* decoder output linear PCM sam
  */
 static uint8_t g726_16_encoder(g726_state_t *s, int16_t amp)
 {
-    int y;
+    int32_t y;
     int16_t sei;
     int16_t sezi;
     int16_t se;
@@ -717,7 +717,7 @@ static int16_t g726_16_decoder(g726_state_t *s, uint8_t code)
     int16_t sr;
     int16_t dq;
     int16_t dqsez;
-    int y;
+    int32_t y;
 
     /* Mask to get proper bits */
     code &= 0x03;
@@ -760,7 +760,7 @@ static uint8_t g726_24_encoder(g726_state_t *s, int16_t amp)
     int16_t dqsez;
     int16_t dq;
     int16_t i;
-    int y;
+    int32_t y;
 
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
@@ -795,7 +795,7 @@ static int16_t g726_24_decoder(g726_state_t *s, uint8_t code)
     int16_t sr;
     int16_t dq;
     int16_t dqsez;
-    int y;
+    int32_t y;
 
     /* Mask to get proper bits */
     code &= 0x07;
@@ -838,7 +838,7 @@ static uint8_t g726_32_encoder(g726_state_t *s, int16_t amp)
     int16_t dqsez;
     int16_t dq;
     int16_t i;
-    int y;
+    int32_t y;
 
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
@@ -873,7 +873,7 @@ static int16_t g726_32_decoder(g726_state_t *s, uint8_t code)
     int16_t sr;
     int16_t dq;
     int16_t dqsez;
-    int y;
+    int32_t y;
 
     /* Mask to get proper bits */
     code &= 0x0F;
@@ -917,7 +917,7 @@ static uint8_t g726_40_encoder(g726_state_t *s, int16_t amp)
     int16_t dqsez;
     int16_t dq;
     int16_t i;
-    int y;
+    int32_t y;
 
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
@@ -952,7 +952,7 @@ static int16_t g726_40_decoder(g726_state_t *s, uint8_t code)
     int16_t sr;
     int16_t dq;
     int16_t dqsez;
-    int y;
+    int32_t y;
 
     /* Mask to get proper bits */
     code &= 0x1F;
@@ -982,9 +982,9 @@ static int16_t g726_40_decoder(g726_state_t *s, uint8_t code)
 }
 /*- End of function --------------------------------------------------------*/
 
-g726_state_t *g726_init(g726_state_t *s, int bit_rate, int ext_coding, int packing)
+g726_state_t *g726_init(g726_state_t *s, int32_t bit_rate, int32_t ext_coding, int32_t packing)
 {
-    int i;
+    int32_t i;
 
     if (bit_rate != 16000  &&  bit_rate != 24000  &&  bit_rate != 32000  &&  bit_rate != 40000)
         return NULL;
@@ -1045,22 +1045,22 @@ g726_state_t *g726_init(g726_state_t *s, int bit_rate, int ext_coding, int packi
 }
 /*- End of function --------------------------------------------------------*/
 
-int g726_release(g726_state_t *s)
+int32_t g726_release(g726_state_t *s)
 {
     free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
 
-int g726_decode(g726_state_t *s,
+int32_t g726_decode(g726_state_t *s,
                 int16_t amp[],
                 const uint8_t g726_data[],
-                int g726_bytes)
+                int32_t g726_bytes)
 {
-    int i;
-    int samples;
+    int32_t i;
+    int32_t samples;
     uint8_t code;
-    int sl;
+    int32_t sl;
 
     for (samples = i = 0;  i < g726_bytes;  )
     {
@@ -1102,13 +1102,13 @@ int g726_decode(g726_state_t *s,
 }
 /*- End of function --------------------------------------------------------*/
 
-int g726_encode(g726_state_t *s,
+int32_t g726_encode(g726_state_t *s,
                 uint8_t g726_data[],
                 const int16_t amp[],
-                int samples)
+                int32_t samples)
 {
-    int i;
-    int g726_bytes;
+    int32_t i;
+    int32_t g726_bytes;
     int16_t sl;
     uint8_t code;
 
