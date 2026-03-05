@@ -43,6 +43,7 @@
 #include "config.h"
 #endif
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -50,8 +51,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "spandsp.h"
-#include "spandsp/private/g722.h"
+#include <g722.h>
 
 #define MAX_TEST_VECTOR_LEN 40000
 #define TESTDATA_DIR        "../test-data/itu/g722/"
@@ -155,7 +155,6 @@ static int get_vector(FILE *file, uint16_t vec[])
 
     while (fgets(buf, 133, file))
     {
-        /* Skip comment lines (starting with '/*') */
         if (buf[0] == '/'  &&  buf[1] == '*')
             continue;
         s = buf;
@@ -182,6 +181,8 @@ static int get_test_vector(const char *file, uint16_t buf[], int max_len)
     int octets;
     int i;
     FILE *infile;
+
+    (void)max_len;
 
     if ((infile = fopen(file, "r")) == NULL)
     {
@@ -266,7 +267,7 @@ static void itu_compliance_tests(void)
             exit(2);
         }
         printf("Test passed\n");
-        g722_encode_free(enc_state);
+        g722_encode_release(enc_state);
     }
 
     /* ---- DECODE TESTS (Configuration 2) ---- */
@@ -344,7 +345,7 @@ static void itu_compliance_tests(void)
                 exit(2);
             }
             printf("Test passed\n");
-            g722_decode_free(dec_state);
+            g722_decode_release(dec_state);
         }
     }
 
@@ -354,7 +355,7 @@ static void itu_compliance_tests(void)
 /*!
  * Main program.  Simply runs the ITU-T compliance tests.
  */
-int main(int argc, char *argv[])
+int main(void)
 {
     printf("G.722 ITU-T compliance tests\n");
     printf("============================\n");
