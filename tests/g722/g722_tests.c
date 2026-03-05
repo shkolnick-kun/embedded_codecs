@@ -54,7 +54,7 @@
 #include <g722.h>
 
 #define MAX_TEST_VECTOR_LEN 40000
-#define TESTDATA_DIR        "../test-data/itu/g722/"
+#define TESTDATA_DIR        "../test-data/itu/g722/g722-ascii/"
 
 /*! Input data buffer (16-bit PCM samples) */
 int16_t itu_data[MAX_TEST_VECTOR_LEN];

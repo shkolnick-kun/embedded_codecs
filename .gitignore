@@ -90,6 +90,7 @@ doc/doxygen/html/**
 
 # Test data #
 tests/test-data/itu/g726/DISK*
+tests/test-data/itu/g722/g722-ascii*
 
 # Specific files #
 ##################
