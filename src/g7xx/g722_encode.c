@@ -29,15 +29,9 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <memory.h>
+#include <malloc.h>
 #include <stdlib.h>
-#ifndef _MSC_VER
-#include <inttypes.h>
-#ifdef HAVE_TGMATH_H
-#include <tgmath.h>
-#endif
-#endif
+#include <string.h>
 
 #include "g722.h"
 
@@ -48,7 +42,7 @@
 #define TRUE (!FALSE)
 #endif
 
-static __inline__ int16_t saturate(int32_t amp)
+static inline int16_t saturate(int32_t amp)
 {
     int16_t amp16;
 

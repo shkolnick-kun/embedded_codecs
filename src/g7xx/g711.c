@@ -21,17 +21,6 @@
 #include <config.h>
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#ifndef _MSC_VER
-#include <inttypes.h>
-#ifdef HAVE_TGMATH_H
-#include <tgmath.h>
-#endif
-#endif
-
 #include "g711.h"
 
 /* Copied from the CCITT G.711 specification */

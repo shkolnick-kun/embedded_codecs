@@ -48,22 +48,11 @@ extern "C" {
 
 #include <stdint.h>
 
-//
-//#ifdef _MSC_VER
-//#ifndef __inline__
-//#define __inline__ __inline
-//#endif
-//typedef unsigned __int8 uint8_t;
-//typedef __int16 int16_t;
-//typedef __int32 int32_t;
-//typedef unsigned __int16 uint16_t;
-//#endif
-
 #if defined(__i386__)
 /*! \brief Find the bit position of the highest set bit in a word
     \param bits The word to be searched
     \return The bit number of the highest set bit, or -1 if the word is zero. */
-static __inline__ int top_bit(unsigned int bits)
+static inline int top_bit(unsigned int bits)
 {
     int res;
 
@@ -78,7 +67,7 @@ static __inline__ int top_bit(unsigned int bits)
 /*! \brief Find the bit position of the lowest set bit in a word
     \param bits The word to be searched
     \return The bit number of the lowest set bit, or -1 if the word is zero. */
-static __inline__ int bottom_bit(unsigned int bits)
+static inline int bottom_bit(unsigned int bits)
 {
     int res;
 
@@ -90,7 +79,7 @@ static __inline__ int bottom_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 #elif defined(__x86_64__)
-static __inline__ int top_bit(unsigned int bits)
+static inline int top_bit(unsigned int bits)
 {
     int res;
 
@@ -102,7 +91,7 @@ static __inline__ int top_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 
-static __inline__ int bottom_bit(unsigned int bits)
+static inline int bottom_bit(unsigned int bits)
 {
     int res;
 
@@ -114,7 +103,7 @@ static __inline__ int bottom_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 #else
-static __inline__ int top_bit(unsigned int bits)
+static inline int top_bit(unsigned int bits)
 {
     int i;
 
@@ -150,7 +139,7 @@ static __inline__ int top_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 
-static __inline__ int bottom_bit(unsigned int bits)
+static inline int bottom_bit(unsigned int bits)
 {
     int i;
 
@@ -231,7 +220,7 @@ static __inline__ int bottom_bit(unsigned int bits)
     \param linear The sample to encode.
     \return The u-law value.
 */
-static __inline__ uint8_t linear_to_ulaw(int linear)
+static inline uint8_t linear_to_ulaw(int linear)
 {
     uint8_t u_val;
     int mask;
@@ -272,7 +261,7 @@ static __inline__ uint8_t linear_to_ulaw(int linear)
     \param ulaw The u-law sample to decode.
     \return The linear value.
 */
-static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
+static inline int16_t ulaw_to_linear(uint8_t ulaw)
 {
     int t;
 
@@ -311,7 +300,7 @@ static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
     \param linear The sample to encode.
     \return The A-law value.
 */
-static __inline__ uint8_t linear_to_alaw(int linear)
+static inline uint8_t linear_to_alaw(int linear)
 {
     int mask;
     int seg;
@@ -349,7 +338,7 @@ static __inline__ uint8_t linear_to_alaw(int linear)
     \param alaw The A-law sample to decode.
     \return The linear value.
 */
-static __inline__ int16_t alaw_to_linear(uint8_t alaw)
+static inline int16_t alaw_to_linear(uint8_t alaw)
 {
     int i;
     int seg;

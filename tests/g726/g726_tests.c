@@ -1041,6 +1041,9 @@ static int get_test_vector(const char *file, uint8_t buf[], int max_len)
     int sum;
     FILE *infile;
 
+    /*Supress warning*/
+    (void)max_len;
+
     if ((infile = fopen(file, "r")) == NULL)
     {
         fprintf(stderr, "    Failed to open '%s'\n", file);
@@ -1205,7 +1208,7 @@ static void itu_compliance_tests(void)
 }
 /*- End of function --------------------------------------------------------*/
 
-int main(int argc, char *argv[])
+int main(void)
 {
     itu_compliance_tests();
     return 0;
