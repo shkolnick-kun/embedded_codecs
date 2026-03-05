@@ -1,7 +1,7 @@
 /*
  * SpanDSP - a series of DSP components for telephony
  *
- * g722_tests.c - Test G.722 encode and decode.
+ * g722_tests.c - Test G.722 encode and decode (ITU-T compliance only).
  *
  * Written by Steve Underwood <steveu@coppice.org>
  *
@@ -23,36 +23,21 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/*! \file */
-
-/*! \page g722_tests_page G.722 tests
-\section g722_tests_page_sec_1 What does it do?
-This modules implements two sets of tests:
-    - The tests defined in the G.722 specification, using the test data files supplied
-      with the specification.
-    - A generally audio quality test, consisting of compressing and decompressing a speeech
-      file for audible comparison.
-
-The speech file should be recorded at 16 bits/sample, 16000 samples/second, and named
-"pre_g722.wav".
-
-The ITU tests use the codec in a special mode, in which the QMFs, which split and recombine the
-sub-bands, are disabled. This means they do not test 100% of the codec. This is the reason for
-including the additional listening test.
-
-\section g722_tests_page_sec_2 How is it used?
-To perform the tests in the G.722 specification you need to obtain the test data files from the
-specification. These are copyright material, and so cannot be distributed with this test software.
-
-The files, containing test vectors, which are supplied with the G.722 specification, should be
-copied to itutests/g722. The ITU tests can then be run by executing g722_tests without
-any parameters.
-
-To perform a general audio quality test, g722_tests should be run with a parameter specifying
-the required bit rate for compression. The valid parameters are "-48", "-56", and "-64".
-The file ../test-data/local/short_wb_voice.wav will be compressed to the specified bit rate, decompressed,
-and the resulting audio stored in post_g722.wav.
-*/
+/*!
+ * \file
+ * \brief G.722 tests – ITU-T compliance tests only.
+ *
+ * This module implements the tests defined in the G.722 specification,
+ * using the test data files supplied with the specification.
+ *
+ * To perform the tests you need to obtain the test data files from the
+ * specification. These are copyright material, and so cannot be distributed
+ * with this test software.
+ *
+ * The files, containing test vectors, which are supplied with the G.722
+ * specification, should be copied to itutests/g722. The ITU tests can then
+ * be run by executing this program without any parameters.
+ */
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
@@ -62,52 +47,32 @@ and the resulting audio stored in post_g722.wav.
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <memory.h>
+#include <string.h>
 #include <ctype.h>
-#include <sndfile.h>
 
 #include "spandsp.h"
-
 #include "spandsp/private/g722.h"
 
-#define G722_SAMPLE_RATE    16000
-
-#define BLOCK_LEN           320
-
 #define MAX_TEST_VECTOR_LEN 40000
-
 #define TESTDATA_DIR        "../test-data/itu/g722/"
 
-#define EIGHTK_IN_FILE_NAME "../test-data/local/short_nb_voice.wav"
-#define IN_FILE_NAME        "../test-data/local/short_wb_voice.wav"
-#define ENCODED_FILE_NAME   "g722.g722"
-#define OUT_FILE_NAME       "post_g722.wav"
+/*! Input data buffer (16-bit PCM samples) */
+int16_t itu_data[MAX_TEST_VECTOR_LEN];
+/*! Reference output data (lower band) */
+uint16_t itu_ref[MAX_TEST_VECTOR_LEN];
+/*! Reference output data (upper band) */
+uint16_t itu_ref_upper[MAX_TEST_VECTOR_LEN];
+/*! Compressed G.722 data */
+uint8_t compressed[MAX_TEST_VECTOR_LEN];
+/*! Decompressed PCM data */
+int16_t decompressed[MAX_TEST_VECTOR_LEN];
 
-#if 0
-static const char *itu_test_files[] =
-{
-    TESTDATA_DIR "T1C1.XMT",        /* 69973 bytes */
-    TESTDATA_DIR "T1C2.XMT",        /* 3605 bytes */
-    TESTDATA_DIR "T1D3.COD",        /* 69973 bytes */
-
-    TESTDATA_DIR "T2R1.COD",        /* 69973 bytes */
-    TESTDATA_DIR "T2R2.COD",        /* 3605 bytes */
-
-    TESTDATA_DIR "T3L1.RC1",        /* 69973 bytes */
-    TESTDATA_DIR "T3L1.RC2",        /* 69973 bytes */
-    TESTDATA_DIR "T3L1.RC3",        /* 69973 bytes */
-    TESTDATA_DIR "T3H1.RC0",        /* 69973 bytes */
-    TESTDATA_DIR "T3L2.RC1",        /* 3605 bytes */
-    TESTDATA_DIR "T3L2.RC2",        /* 3605 bytes */
-    TESTDATA_DIR "T3L2.RC3",        /* 3605 bytes */
-    TESTDATA_DIR "T3H2.RC0",        /* 3605 bytes */
-    TESTDATA_DIR "T3L3.RC1",        /* 69973 bytes */
-    TESTDATA_DIR "T3L3.RC2",        /* 69973 bytes */
-    TESTDATA_DIR "T3L3.RC3",        /* 69973 bytes */
-    TESTDATA_DIR "T3H3.RC0"         /* 69973 bytes */
-};
-#endif
-
+/*!
+ * List of encode test file pairs (input -> reference output).
+ * Each pair consists of:
+ *   - input file  (PCM, 16 bits/sample, 16 kHz, in hex format)
+ *   - reference encoded file (G.722 compressed, in hex format)
+ */
 static const char *encode_test_files[] =
 {
     TESTDATA_DIR "T1C1.XMT",
@@ -117,6 +82,15 @@ static const char *encode_test_files[] =
     NULL
 };
 
+/*!
+ * List of decode test file groups.
+ * For each group (5 files) we have:
+ *   - compressed input file
+ *   - lower band reference output for mode 1 (48 kbit/s)
+ *   - lower band reference output for mode 2 (56 kbit/s)
+ *   - lower band reference output for mode 3 (64 kbit/s)
+ *   - upper band reference output (all modes use the same upper band)
+ */
 static const char *decode_test_files[] =
 {
     TESTDATA_DIR "T2R1.COD",
@@ -140,12 +114,11 @@ static const char *decode_test_files[] =
     NULL
 };
 
-int16_t itu_data[MAX_TEST_VECTOR_LEN];
-uint16_t itu_ref[MAX_TEST_VECTOR_LEN];
-uint16_t itu_ref_upper[MAX_TEST_VECTOR_LEN];
-uint8_t compressed[MAX_TEST_VECTOR_LEN];
-int16_t decompressed[MAX_TEST_VECTOR_LEN];
-
+/*!
+ * Convert a 4‑character hex string to an integer.
+ * \param s Pointer to a string containing exactly 4 hex digits.
+ * \return The integer value, or -1 on error.
+ */
 static int hex_get(char *s)
 {
     int i;
@@ -157,21 +130,22 @@ static int hex_get(char *s)
         x = *s++ - 0x30;
         if (x > 9)
             x -= 0x07;
-        /*endif*/
         if (x > 15)
             x -= 0x20;
-        /*endif*/
         if (x < 0  ||  x > 15)
             return -1;
-        /*endif*/
         value <<= 4;
         value |= x;
     }
-    /*endfor*/
     return value;
 }
-/*- End of function --------------------------------------------------------*/
 
+/*!
+ * Read one vector (a line of hex numbers) from a test vector file.
+ * \param file Open file handle.
+ * \param vec  Array to store the decoded numbers.
+ * \return The number of values read, or 0 at end of file.
+ */
 static int get_vector(FILE *file, uint16_t vec[])
 {
     char buf[132 + 1];
@@ -181,9 +155,9 @@ static int get_vector(FILE *file, uint16_t vec[])
 
     while (fgets(buf, 133, file))
     {
+        /* Skip comment lines (starting with '/*') */
         if (buf[0] == '/'  &&  buf[1] == '*')
             continue;
-        /*endif*/
         s = buf;
         i = 0;
         while ((value = hex_get(s)) >= 0)
@@ -191,14 +165,18 @@ static int get_vector(FILE *file, uint16_t vec[])
             vec[i++] = value;
             s += 4;
         }
-        /*endwhile*/
         return i;
     }
-    /*endwhile*/
     return 0;
 }
-/*- End of function --------------------------------------------------------*/
 
+/*!
+ * Load a complete test vector file into a buffer.
+ * \param file   Name of the file to read.
+ * \param buf    Buffer to store the data.
+ * \param max_len Maximum number of values to store.
+ * \return The total number of values read.
+ */
 static int get_test_vector(const char *file, uint16_t buf[], int max_len)
 {
     int octets;
@@ -210,16 +188,17 @@ static int get_test_vector(const char *file, uint16_t buf[], int max_len)
         fprintf(stderr, "    Failed to open '%s'\n", file);
         exit(2);
     }
-    /*endif*/
     octets = 0;
     while ((i = get_vector(infile, buf + octets)) > 0)
         octets += i;
-    /*endwhile*/
     fclose(infile);
     return octets;
 }
-/*- End of function --------------------------------------------------------*/
 
+/*!
+ * Perform all ITU-T G.722 compliance tests.
+ * These tests use the codec in a special mode where the QMFs are disabled.
+ */
 static void itu_compliance_tests(void)
 {
     g722_encode_state_t *enc_state;
@@ -236,16 +215,14 @@ static void itu_compliance_tests(void)
     int mode;
     int file;
 
-#if 1
-    /* ITU G.722 encode tests, using configuration 1. The QMF is bypassed */
+    /* ---- ENCODE TESTS (Configuration 1) ---- */
     for (file = 0;  encode_test_files[file];  file += 2)
     {
         printf("Testing %s -> %s\n", encode_test_files[file], encode_test_files[file + 1]);
 
-        /* Get the input data */
+        /* Load input PCM data */
         len_data = get_test_vector(encode_test_files[file], (uint16_t *) itu_data, MAX_TEST_VECTOR_LEN);
-
-        /* Get the reference output data */
+        /* Load reference encoded data */
         len_comp = get_test_vector(encode_test_files[file + 1], itu_ref, MAX_TEST_VECTOR_LEN);
 
         if (len_data != len_comp)
@@ -253,29 +230,26 @@ static void itu_compliance_tests(void)
             printf("Test data length mismatch\n");
             exit(2);
         }
-        /*endif*/
-        /* Process the input data */
-        /* Skip the reset stuff at each end of the data */
+
+        /* Find the active region (between start/stop markers) */
         for (i = 0;  i < len_data;  i++)
         {
             if ((itu_data[i] & 1) == 0)
                 break;
-            /*endif*/
         }
-        /*endfor*/
         for (j = i;  j < len_data;  j++)
         {
             if ((itu_data[j] & 1))
                 break;
-            /*endif*/
         }
-        /*endfor*/
         len = j - i;
+
+        /* Encode using the special ITU test mode (QMF bypassed) */
         enc_state = g722_encode_init(NULL, 64000, 0);
         enc_state->itu_test_mode = true;
         len2 = g722_encode(enc_state, compressed, itu_data + i, len);
 
-        /* Check the result against the ITU's reference output data */
+        /* Compare with the reference */
         j = 0;
         for (k = 0;  k < len2;  k++)
         {
@@ -284,24 +258,19 @@ static void itu_compliance_tests(void)
                 printf(">>> %6d %4x %4x\n", k, compressed[k] & 0xFF, itu_ref[k + i] & 0xFFFF);
                 j++;
             }
-            /*endif*/
         }
-        /*endfor*/
         printf("%d bad samples, out of %d/%d samples\n", j, len, len_data);
         if (j)
         {
             printf("Test failed\n");
             exit(2);
         }
-        /*endif*/
         printf("Test passed\n");
         g722_encode_free(enc_state);
     }
-    /*endfor*/
-#endif
-#if 1
-    /* ITU G.722 decode tests, using configuration 2. The QMF is bypassed */
-    /* Run each of the tests for each of the modes - 48kbps, 56kbps and 64kbps. */
+
+    /* ---- DECODE TESTS (Configuration 2) ---- */
+    /* Run for each mode: 1 = 48 kbps, 2 = 56 kbps, 3 = 64 kbps */
     for (mode = 1;  mode <= 3;  mode++)
     {
         for (file = 0;  decode_test_files[file];  file += 5)
@@ -312,13 +281,11 @@ static void itu_compliance_tests(void)
                    decode_test_files[file + mode],
                    decode_test_files[file + 4]);
 
-            /* Get the input data */
+            /* Load compressed input data */
             len_data = get_test_vector(decode_test_files[file], (uint16_t *) itu_data, MAX_TEST_VECTOR_LEN);
-
-            /* Get the lower reference output data */
+            /* Load lower band reference (mode dependent) */
             len_comp_lower = get_test_vector(decode_test_files[file + mode], itu_ref, MAX_TEST_VECTOR_LEN);
-
-            /* Get the upper reference output data */
+            /* Load upper band reference (same for all modes) */
             len_comp_upper = get_test_vector(decode_test_files[file + 4], itu_ref_upper, MAX_TEST_VECTOR_LEN);
 
             if (len_data != len_comp_lower  ||  len_data != len_comp_upper)
@@ -326,33 +293,34 @@ static void itu_compliance_tests(void)
                 printf("Test data length mismatch\n");
                 exit(2);
             }
-            /*endif*/
-            /* Process the input data */
-            /* Skip the reset stuff at each end of the data */
+
+            /* Find the active region */
             for (i = 0;  i < len_data;  i++)
             {
                 if ((itu_data[i] & 1) == 0)
                     break;
-                /*endif*/
             }
-            /*endfor*/
             for (j = i;  j < len_data;  j++)
             {
                 if ((itu_data[j] & 1))
                     break;
-                /*endif*/
             }
-            /*endfor*/
             len = j - i;
+
+            /* Extract the compressed bytes from the 16‑bit words.
+               The reference files store compressed data in 16‑bit words,
+               but the actual G.722 bytes are placed differently per mode. */
             for (k = 0;  k < len;  k++)
                 compressed[k] = itu_data[k + i] >> ((mode == 3)  ?  10  :  (mode == 2)  ?  9  :  8);
-            /*endfor*/
 
-            dec_state = g722_decode_init(NULL, (mode == 3)  ?  48000  :  (mode == 2)  ?  56000  :  64000, 0);
+            /* Decode using the appropriate bit rate and ITU test mode */
+            dec_state = g722_decode_init(NULL,
+                                         (mode == 3)  ?  48000  :  (mode == 2)  ?  56000  :  64000,
+                                         0);
             dec_state->itu_test_mode = true;
             len2 = g722_decode(dec_state, decompressed, compressed, len);
 
-            /* Check the result against the ITU's reference output data */
+            /* Compare each stereo (lower+upper) sample with the two references */
             j = 0;
             for (k = 0;  k < len2;  k += 2)
             {
@@ -360,403 +328,37 @@ static void itu_compliance_tests(void)
                     ||
                     (decompressed[k + 1] & 0xFFFF) != (itu_ref_upper[(k >> 1) + i] & 0xFFFF))
                 {
-                    printf(">>> %6d %4x %4x %4x %4x\n", k >> 1, decompressed[k] & 0xFFFF, decompressed[k + 1] & 0xFFFF, itu_ref[(k >> 1) + i] & 0xFFFF, itu_ref_upper[(k >> 1) + i] & 0xFFFF);
+                    printf(">>> %6d %4x %4x %4x %4x\n",
+                           k >> 1,
+                           decompressed[k] & 0xFFFF,
+                           decompressed[k + 1] & 0xFFFF,
+                           itu_ref[(k >> 1) + i] & 0xFFFF,
+                           itu_ref_upper[(k >> 1) + i] & 0xFFFF);
                     j++;
                 }
-                /*endif*/
             }
-            /*endfor*/
             printf("%d bad samples, out of %d/%d samples\n", j, len, len_data);
             if (j)
             {
                 printf("Test failed\n");
                 exit(2);
             }
-            /*endif*/
             printf("Test passed\n");
             g722_decode_free(dec_state);
         }
-        /*endfor*/
     }
-    /*endfor*/
-#endif
-    printf("Tests passed.\n");
+
+    printf("All ITU-T compliance tests passed.\n");
 }
-/*- End of function --------------------------------------------------------*/
 
-static void signal_to_distortion_tests(void)
-{
-    g722_encode_state_t *enc_state;
-    g722_decode_state_t *dec_state;
-    swept_tone_state_t *swept;
-    power_meter_t *in_meter;
-    power_meter_t *out_meter;
-    int16_t original[1024];
-    uint8_t compressed[1024];
-    int16_t decompressed[1024];
-    int len;
-    int len2;
-    int len3;
-    int i;
-    int32_t in_level;
-    int32_t out_level;
-
-    /* Test a back to back encoder/decoder pair to ensure we comply with Figure 11/G.722 to
-       Figure 16/G.722, Figure A.1/G.722, and Figure A.2/G.722 */
-    enc_state = g722_encode_init(NULL, 64000, 0);
-    dec_state = g722_decode_init(NULL, 64000, 0);
-    in_meter = power_meter_init(NULL, 7);
-    out_meter = power_meter_init(NULL, 7);
-
-    /* First some silence */
-    len = 1024;
-    memset(original, 0, len*sizeof(original[0]));
-    for (i = 0;  i < len;  i++)
-        in_level = power_meter_update(in_meter, original[i]);
-    /*endfor*/
-    len2 = g722_encode(enc_state, compressed, original, len);
-    len3 = g722_decode(dec_state, decompressed, compressed, len2);
-    out_level = 0;
-    for (i = 0;  i < len3;  i++)
-        out_level = power_meter_update(out_meter, decompressed[i]);
-    /*endfor*/
-    printf("Silence produces %d at the output\n", out_level);
-
-    /* Now a swept tone test */
-    swept = swept_tone_init(NULL, 25.0f, 3500.0f, -10.0f, 60*16000, false);
-    do
-    {
-        len = swept_tone(swept, original, 1024);
-        for (i = 0;  i < len;  i++)
-            in_level = power_meter_update(in_meter, original[i]);
-        /*endfor*/
-        len2 = g722_encode(enc_state, compressed, original, len);
-        len3 = g722_decode(dec_state, decompressed, compressed, len2);
-        for (i = 0;  i < len3;  i++)
-            out_level = power_meter_update(out_meter, decompressed[i]);
-        /*endfor*/
-        printf("%10d, %10d, %f\n", in_level, out_level, (float) out_level/in_level);
-    }
-    while (len > 0);
-    swept_tone_free(swept);
-    g722_encode_free(enc_state);
-    g722_decode_free(dec_state);
-    power_meter_free(in_meter);
-    power_meter_free(out_meter);
-}
-/*- End of function --------------------------------------------------------*/
-
+/*!
+ * Main program.  Simply runs the ITU-T compliance tests.
+ */
 int main(int argc, char *argv[])
 {
-    g722_encode_state_t *enc_state;
-    g722_decode_state_t *dec_state;
-    int len2;
-    int len3;
-    int i;
-    int file;
-    SNDFILE *inhandle;
-    SNDFILE *outhandle;
-    SF_INFO info;
-    int outframes;
-    int samples;
-    int opt;
-    int itutests;
-    int bit_rate;
-    int eight_k_in;
-    int eight_k_out;
-    int encode;
-    int decode;
-    int tone_test;
-    const char *in_file;
-    const char *out_file;
-    int16_t indata[BLOCK_LEN];
-    int16_t outdata[BLOCK_LEN];
-    uint8_t adpcmdata[BLOCK_LEN];
-    float tone_level;
-    uint32_t tone_phase;
-    int32_t tone_phase_rate;
-
-    bit_rate = 64000;
-    eight_k_in = false;
-    eight_k_out = false;
-    itutests = true;
-    encode = false;
-    decode = false;
-    tone_test = false;
-    in_file = NULL;
-    out_file = NULL;
-    while ((opt = getopt(argc, argv, "b:d:e:i:l:o:t")) != -1)
-    {
-        switch (opt)
-        {
-        case 'b':
-            bit_rate = atoi(optarg);
-            if (bit_rate != 48000  &&  bit_rate != 56000  &&  bit_rate != 64000)
-            {
-                fprintf(stderr, "Invalid bit rate selected. Only 48000, 56000 and 64000 are valid.\n");
-                exit(2);
-            }
-            /*endif*/
-            itutests = false;
-            break;
-        case 'd':
-            in_file = optarg;
-            decode = true;
-            itutests = false;
-            break;
-        case 'e':
-            in_file = optarg;
-            encode = true;
-            itutests = false;
-            break;
-        case 'i':
-            i = atoi(optarg);
-            if (i != 8000  &&  i != 16000)
-            {
-                fprintf(stderr, "Invalid incoming sample rate. Only 8000 and 16000 are valid.\n");
-                exit(2);
-            }
-            /*endif*/
-            eight_k_in = (i == 8000);
-            if (eight_k_in)
-                in_file = EIGHTK_IN_FILE_NAME;
-            /*endif*/
-            break;
-        case 'l':
-            out_file = optarg;
-            break;
-        case 'o':
-            i = atoi(optarg);
-            if (i != 8000  &&  i != 16000)
-            {
-                fprintf(stderr, "Invalid outgoing sample rate. Only 8000 and 16000 are valid.\n");
-                exit(2);
-            }
-            /*endif*/
-            eight_k_out = (i == 8000);
-            break;
-        case 't':
-            tone_test = true;
-            itutests = false;
-            break;
-        default:
-            //usage();
-            exit(2);
-        }
-        /*endswitch*/
-    }
-    /*endwhile*/
-
-    if (itutests)
-    {
-        itu_compliance_tests();
-        signal_to_distortion_tests();
-    }
-    else
-    {
-        tone_level = dds_scaling_dbm0f(2.5f);
-        tone_phase = 0;
-        tone_phase_rate = dds_phase_ratef(1500.0f/2.0f);
-        if (!decode  &&  !encode)
-        {
-            decode =
-            encode = true;
-        }
-        /*endif*/
-        if (in_file == NULL)
-        {
-            if (encode)
-            {
-                if (eight_k_in)
-                    in_file = EIGHTK_IN_FILE_NAME;
-                else
-                    in_file = IN_FILE_NAME;
-                /*endif*/
-            }
-            else
-            {
-                in_file = ENCODED_FILE_NAME;
-            }
-            /*endif*/
-        }
-        /*endif*/
-        if (out_file == NULL)
-        {
-            out_file = (decode)  ?  OUT_FILE_NAME  :  ENCODED_FILE_NAME;
-        }
-        /*endif*/
-        inhandle = NULL;
-        outhandle = NULL;
-        file = -1;
-        if (encode)
-        {
-            if (eight_k_in)
-            {
-                if ((inhandle = sf_open(in_file, SFM_READ, &info)) == NULL)
-                {
-                    fprintf(stderr, "    Cannot open audio file '%s'\n", in_file);
-                    exit(2);
-                }
-                /*endif*/
-                if (info.samplerate != SAMPLE_RATE)
-                {
-                    fprintf(stderr, "    Unexpected sample rate %d in audio file '%s'\n", info.samplerate, in_file);
-                    exit(2);
-                }
-                /*endif*/
-                if (info.channels != 1)
-                {
-                    fprintf(stderr, "    Unexpected number of channels in audio file '%s'\n", in_file);
-                    exit(2);
-                }
-                /*endif*/
-                enc_state = g722_encode_init(NULL, bit_rate, G722_PACKED | G722_SAMPLE_RATE_8000);
-            }
-            else
-            {
-                if ((inhandle = sf_open(in_file, SFM_READ, &info)) == NULL)
-                {
-                    fprintf(stderr, "    Cannot open audio file '%s'\n", in_file);
-                    exit(2);
-                }
-                /*endif*/
-                if (info.samplerate != G722_SAMPLE_RATE)
-                {
-                    fprintf(stderr, "    Unexpected sample rate %d in audio file '%s'\n", info.samplerate, in_file);
-                    exit(2);
-                }
-                /*endif*/
-                if (info.channels != 1)
-                {
-                    fprintf(stderr, "    Unexpected number of channels in audio file '%s'\n", in_file);
-                    exit(2);
-                }
-                /*endif*/
-                enc_state = g722_encode_init(NULL, bit_rate, G722_PACKED);
-            }
-            /*endif*/
-        }
-        else
-        {
-            if ((file = open(in_file, O_RDONLY)) < 0)
-            {
-                fprintf(stderr, "    Failed to open '%s'\n", in_file);
-                exit(2);
-            }
-            /*endif*/
-        }
-        /*endif*/
-        dec_state = NULL;
-        if (decode)
-        {
-            memset(&info, 0, sizeof(info));
-            info.frames = 0;
-            info.samplerate = (eight_k_out)  ?  SAMPLE_RATE  :  G722_SAMPLE_RATE;
-            info.channels = 1;
-            info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
-            info.sections = 1;
-            info.seekable = 1;
-            if ((outhandle = sf_open(out_file, SFM_WRITE, &info)) == NULL)
-            {
-                fprintf(stderr, "    Cannot create audio file '%s'\n", out_file);
-                exit(2);
-            }
-            /*endif*/
-            if (eight_k_out)
-                dec_state = g722_decode_init(NULL, bit_rate, G722_PACKED | G722_SAMPLE_RATE_8000);
-            else
-                dec_state = g722_decode_init(NULL, bit_rate, G722_PACKED);
-            /*endif*/
-        }
-        else
-        {
-            if ((file = open(out_file, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
-            {
-                fprintf(stderr, "    Failed to open '%s'\n", out_file);
-                exit(2);
-            }
-            /*endif*/
-        }
-        /*endif*/
-        for (;;)
-        {
-            if (encode)
-            {
-                samples = sf_readf_short(inhandle, indata, BLOCK_LEN);
-                if (samples <= 0)
-                    break;
-                /*endif*/
-                if (tone_test)
-                {
-                    for (i = 0;  i < samples;  i++)
-                        indata[i] = dds_modf(&tone_phase, tone_phase_rate, tone_level, 0);
-                    /*endfor*/
-                }
-                /*endif*/
-                len2 = g722_encode(enc_state, adpcmdata, indata, samples);
-            }
-            else
-            {
-                len2 = read(file, adpcmdata, BLOCK_LEN);
-                if (len2 <= 0)
-                    break;
-                /*endif*/
-            }
-            /*endif*/
-            if (decode)
-            {
-                len3 = g722_decode(dec_state, outdata, adpcmdata, len2);
-                outframes = sf_writef_short(outhandle, outdata, len3);
-                if (outframes != len3)
-                {
-                    fprintf(stderr, "    Error writing audio file\n");
-                    exit(2);
-                }
-                /*endif*/
-            }
-            else
-            {
-                len3 = write(file, adpcmdata, len2);
-                if (len3 <= 0)
-                    break;
-                /*endif*/
-            }
-            /*endif*/
-        }
-        /*endfor*/
-        if (encode)
-        {
-            if (sf_close(inhandle))
-            {
-                fprintf(stderr, "    Cannot close audio file '%s'\n", IN_FILE_NAME);
-                exit(2);
-            }
-            /*endif*/
-            g722_encode_free(enc_state);
-        }
-        else
-        {
-            close(file);
-        }
-        /*endif*/
-        if (decode)
-        {
-            if (sf_close(outhandle))
-            {
-                fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME);
-                exit(2);
-            }
-            /*endif*/
-            g722_decode_free(dec_state);
-        }
-        else
-        {
-            close(file);
-        }
-        /*endif*/
-        printf("'%s' translated to '%s' at %dbps.\n", in_file, out_file, bit_rate);
-    }
+    printf("G.722 ITU-T compliance tests\n");
+    printf("============================\n");
+    itu_compliance_tests();
     return 0;
 }
-/*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/
