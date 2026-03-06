@@ -24,7 +24,7 @@
  */
 
 /*!
- * \file
+ * \file g722_tests.c
  * \brief G.722 tests – ITU-T compliance tests only.
  *
  * This module implements the tests defined in the G.722 specification,
@@ -37,6 +37,11 @@
  * The files, containing test vectors, which are supplied with the G.722
  * specification, should be copied to itutests/g722. The ITU tests can then
  * be run by executing this program without any parameters.
+ *
+ * \note This file has been adapted for use as a library on microcontrollers.
+ *       File I/O functions are replaced by macros defined in config.h.
+ *       The function itu_compliance_tests() returns 0 on success or a
+ *       negative error code on failure.
  */
 
 #if defined(HAVE_CONFIG_H)
@@ -44,28 +49,59 @@
 #endif
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <ctype.h>
 
 #include <g722.h>
 
-#define MAX_TEST_VECTOR_LEN 40000
+#include "g722_tests.h"
+
+/* ------------------------------------------------------------------------- */
+/* I/O macros – to be provided by the user in config.h                       */
+/* ------------------------------------------------------------------------- */
+#ifndef TEST_OPEN
+#define TEST_OPEN(filename, mode)   fopen(filename, mode)
+#endif
+
+#ifndef TEST_CLOSE
+#define TEST_CLOSE(file)             fclose(file)
+#endif
+
+#ifndef TEST_GETS
+#define TEST_GETS(buf, size, file)   fgets(buf, size, file)
+#endif
+
+#ifndef TEST_PRINTF
+#define TEST_PRINTF                  printf
+#endif
+
+/* The original code used exit() on fatal errors.  In a library we return
+   a negative error code instead.  The macro is kept for clarity, but it
+   is never used in this version. */
+#ifndef TEST_EXIT
+#define TEST_EXIT(code)              return (code)
+#endif
+
+/* ------------------------------------------------------------------------- */
+/* Test data directory – may be overridden in config.h                       */
+/* ------------------------------------------------------------------------- */
+#ifndef TESTDATA_DIR
 #define TESTDATA_DIR        "../test-data/itu/g722/g722-ascii/"
+#endif
+
+#define MAX_TEST_VECTOR_LEN 40000
 
 /*! Input data buffer (16-bit PCM samples) */
-int16_t itu_data[MAX_TEST_VECTOR_LEN];
+static int16_t itu_data[MAX_TEST_VECTOR_LEN];
 /*! Reference output data (lower band) */
-uint16_t itu_ref[MAX_TEST_VECTOR_LEN];
+static uint16_t itu_ref[MAX_TEST_VECTOR_LEN];
 /*! Reference output data (upper band) */
-uint16_t itu_ref_upper[MAX_TEST_VECTOR_LEN];
+static uint16_t itu_ref_upper[MAX_TEST_VECTOR_LEN];
 /*! Compressed G.722 data */
-uint8_t compressed[MAX_TEST_VECTOR_LEN];
+static uint8_t compressed[MAX_TEST_VECTOR_LEN];
 /*! Decompressed PCM data */
-int16_t decompressed[MAX_TEST_VECTOR_LEN];
+static int16_t decompressed[MAX_TEST_VECTOR_LEN];
 
 /*!
  * List of encode test file pairs (input -> reference output).
@@ -146,14 +182,14 @@ static int hex_get(char *s)
  * \param vec  Array to store the decoded numbers.
  * \return The number of values read, or 0 at end of file.
  */
-static int get_vector(FILE *file, uint16_t vec[])
+static int get_vector(void *file, uint16_t vec[])
 {
     char buf[132 + 1];
     char *s;
     int i;
     int value;
 
-    while (fgets(buf, 133, file))
+    while (TEST_GETS(buf, sizeof(buf), (FILE *)file))
     {
         if (buf[0] == '/'  &&  buf[1] == '*')
             continue;
@@ -174,33 +210,34 @@ static int get_vector(FILE *file, uint16_t vec[])
  * \param file   Name of the file to read.
  * \param buf    Buffer to store the data.
  * \param max_len Maximum number of values to store.
- * \return The total number of values read.
+ * \return The total number of values read, or -1 on error.
  */
 static int get_test_vector(const char *file, uint16_t buf[], int max_len)
 {
     int octets;
     int i;
-    FILE *infile;
+    void *infile;
 
     (void)max_len;
 
-    if ((infile = fopen(file, "r")) == NULL)
+    if ((infile = TEST_OPEN(file, "r")) == NULL)
     {
-        fprintf(stderr, "    Failed to open '%s'\n", file);
-        exit(2);
+        TEST_PRINTF("    Failed to open '%s'\n", file);
+        return -1;
     }
     octets = 0;
     while ((i = get_vector(infile, buf + octets)) > 0)
         octets += i;
-    fclose(infile);
+    TEST_CLOSE(infile);
     return octets;
 }
 
 /*!
  * Perform all ITU-T G.722 compliance tests.
  * These tests use the codec in a special mode where the QMFs are disabled.
+ * \return 0 on success, negative error code on failure.
  */
-static void itu_compliance_tests(void)
+int itu_compliance_tests(void)
 {
     g722_encode_state_t *enc_state;
     g722_decode_state_t *dec_state;
@@ -219,17 +256,21 @@ static void itu_compliance_tests(void)
     /* ---- ENCODE TESTS (Configuration 1) ---- */
     for (file = 0;  encode_test_files[file];  file += 2)
     {
-        printf("Testing %s -> %s\n", encode_test_files[file], encode_test_files[file + 1]);
+        TEST_PRINTF("Testing %s -> %s\n", encode_test_files[file], encode_test_files[file + 1]);
 
         /* Load input PCM data */
         len_data = get_test_vector(encode_test_files[file], (uint16_t *) itu_data, MAX_TEST_VECTOR_LEN);
+        if (len_data < 0)
+            return -1;
         /* Load reference encoded data */
         len_comp = get_test_vector(encode_test_files[file + 1], itu_ref, MAX_TEST_VECTOR_LEN);
+        if (len_comp < 0)
+            return -1;
 
         if (len_data != len_comp)
         {
-            printf("Test data length mismatch\n");
-            exit(2);
+            TEST_PRINTF("Test data length mismatch\n");
+            return -2;
         }
 
         /* Find the active region (between start/stop markers) */
@@ -256,17 +297,18 @@ static void itu_compliance_tests(void)
         {
             if ((compressed[k] & 0xFF) != ((itu_ref[k + i] >> 8) & 0xFF))
             {
-                printf(">>> %6d %4x %4x\n", k, compressed[k] & 0xFF, itu_ref[k + i] & 0xFFFF);
+                TEST_PRINTF(">>> %6d %4x %4x\n", k, compressed[k] & 0xFF, itu_ref[k + i] & 0xFFFF);
                 j++;
             }
         }
-        printf("%d bad samples, out of %d/%d samples\n", j, len, len_data);
+        TEST_PRINTF("%d bad samples, out of %d/%d samples\n", j, len, len_data);
         if (j)
         {
-            printf("Test failed\n");
-            exit(2);
+            TEST_PRINTF("Test failed\n");
+            g722_encode_release(enc_state);
+            return -3;
         }
-        printf("Test passed\n");
+        TEST_PRINTF("Test passed\n");
         g722_encode_release(enc_state);
     }
 
@@ -276,7 +318,7 @@ static void itu_compliance_tests(void)
     {
         for (file = 0;  decode_test_files[file];  file += 5)
         {
-            printf("Testing mode %d, %s -> %s + %s\n",
+            TEST_PRINTF("Testing mode %d, %s -> %s + %s\n",
                    mode,
                    decode_test_files[file],
                    decode_test_files[file + mode],
@@ -284,15 +326,21 @@ static void itu_compliance_tests(void)
 
             /* Load compressed input data */
             len_data = get_test_vector(decode_test_files[file], (uint16_t *) itu_data, MAX_TEST_VECTOR_LEN);
+            if (len_data < 0)
+                return -1;
             /* Load lower band reference (mode dependent) */
             len_comp_lower = get_test_vector(decode_test_files[file + mode], itu_ref, MAX_TEST_VECTOR_LEN);
+            if (len_comp_lower < 0)
+                return -1;
             /* Load upper band reference (same for all modes) */
             len_comp_upper = get_test_vector(decode_test_files[file + 4], itu_ref_upper, MAX_TEST_VECTOR_LEN);
+            if (len_comp_upper < 0)
+                return -1;
 
             if (len_data != len_comp_lower  ||  len_data != len_comp_upper)
             {
-                printf("Test data length mismatch\n");
-                exit(2);
+                TEST_PRINTF("Test data length mismatch\n");
+                return -2;
             }
 
             /* Find the active region */
@@ -329,7 +377,7 @@ static void itu_compliance_tests(void)
                     ||
                     (decompressed[k + 1] & 0xFFFF) != (itu_ref_upper[(k >> 1) + i] & 0xFFFF))
                 {
-                    printf(">>> %6d %4x %4x %4x %4x\n",
+                    TEST_PRINTF(">>> %6d %4x %4x %4x %4x\n",
                            k >> 1,
                            decompressed[k] & 0xFFFF,
                            decompressed[k + 1] & 0xFFFF,
@@ -338,28 +386,19 @@ static void itu_compliance_tests(void)
                     j++;
                 }
             }
-            printf("%d bad samples, out of %d/%d samples\n", j, len, len_data);
+            TEST_PRINTF("%d bad samples, out of %d/%d samples\n", j, len, len_data);
             if (j)
             {
-                printf("Test failed\n");
-                exit(2);
+                TEST_PRINTF("Test failed\n");
+                g722_decode_release(dec_state);
+                return -3;
             }
-            printf("Test passed\n");
+            TEST_PRINTF("Test passed\n");
             g722_decode_release(dec_state);
         }
     }
 
-    printf("All ITU-T compliance tests passed.\n");
-}
-
-/*!
- * Main program.  Simply runs the ITU-T compliance tests.
- */
-int main(void)
-{
-    printf("G.722 ITU-T compliance tests\n");
-    printf("============================\n");
-    itu_compliance_tests();
+    TEST_PRINTF("All ITU-T compliance tests passed.\n");
     return 0;
 }
 /*- End of file ------------------------------------------------------------*/

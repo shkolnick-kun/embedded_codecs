@@ -23,62 +23,71 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/*! \file */
-
-/*! \page g726_tests_page G.726 tests
-\section g726_tests_page_sec_1 What does it do?
-Two sets of tests are performed:
-    - The tests defined in the G.726 specification, using the test data files supplied with
-      the specification.
-    - A generally audio quality test, consisting of compressing and decompressing a speeech
-      file for audible comparison.
-
-The speech file should be recorded at 16 bits/sample, 8000 samples/second, and named
-"pre_g726.wav".
-
-\section g726_tests_page_sec_2 How is it used?
-To perform the tests in the G.726 specification you need to obtain the test data files from the
-specification. These are copyright material, and so cannot be distributed with this test software.
-
-The files, containing test vectors, which are supplied with the G.726 specification, should be
-copied to itutests/g726 so the files are arranged in the same directory heirarchy in which they
-are supplied. That is, you should have file names like
-
-    - itutests/g726/DISK1/INPUT/NRM.M
-    - itutests/g726/DISK1/INPUT/OVR.M
-    - itutests/g726/DISK2/INPUT/NRM.A
-    - itutests/g726/DISK2/INPUT/OVR.A
-
-in your source tree. The ITU tests can then be run by executing g726_tests without
-any parameters.
-
-To perform a general audio quality test, g726_tests should be run with a parameter specifying
-the required bit rate for compression. The valid parameters are "-16", "-24", "-32", and "-40".
-The test file ../test-data/local/short_nb_voice.wav will be compressed to the specified bit rate,
-decompressed, and the resulting audio stored in post_g726.wav.
-*/
+/*! \file g726_tests.c
+ * \brief G.726 tests – ITU-T compliance tests only.
+ *
+ * This module implements the tests defined in the G.726 specification,
+ * using the test data files supplied with the specification.
+ *
+ * \note This file has been adapted for use as a library on microcontrollers.
+ *       File I/O functions are replaced by macros defined in config.h.
+ *       The function itu_compliance_tests() returns 0 on success or a
+ *       negative error code on failure.
+ */
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <g726.h>
 
-#define MAX_TEST_VECTOR_LEN 40000
+#include "g726_tests.h"
 
+#ifndef TESTDATA_DIR
 #define TESTDATA_DIR        "../test-data/itu/g726/"
+#endif
 
-int16_t outdata[MAX_TEST_VECTOR_LEN];
-uint8_t adpcmdata[MAX_TEST_VECTOR_LEN];
+/* ------------------------------------------------------------------------- */
+/* I/O macros – to be provided by the user in config.h                       */
+/* ------------------------------------------------------------------------- */
+#ifndef TEST_OPEN
+#define TEST_OPEN(filename, mode)   fopen(filename, mode)
+#endif
 
-int16_t itudata[MAX_TEST_VECTOR_LEN];
-uint8_t itu_ref[MAX_TEST_VECTOR_LEN];
-uint8_t unpacked[MAX_TEST_VECTOR_LEN];
-uint8_t xlaw[MAX_TEST_VECTOR_LEN];
+#ifndef TEST_CLOSE
+#define TEST_CLOSE(file)             fclose(file)
+#endif
+
+#ifndef TEST_GETS
+#define TEST_GETS(buf, size, file)   fgets(buf, size, file)
+#endif
+
+#ifndef TEST_PRINTF
+#define TEST_PRINTF                  printf
+#endif
+
+/* The original code used exit() on fatal errors.  In a library we return
+   a negative error code instead.  The macro is kept for clarity, but it
+   is never used in this version. */
+#ifndef TEST_EXIT
+#define TEST_EXIT(code)              return (code)
+#endif
+
+#define MAX_TEST_VECTOR_LEN 20000
+
+static int16_t outdata[MAX_TEST_VECTOR_LEN];
+static uint8_t adpcmdata[MAX_TEST_VECTOR_LEN];
+
+static int16_t itudata[MAX_TEST_VECTOR_LEN];
+static uint8_t itu_ref[MAX_TEST_VECTOR_LEN];
+static uint8_t unpacked[MAX_TEST_VECTOR_LEN];
+static uint8_t xlaw[MAX_TEST_VECTOR_LEN];
 
 /*
 Table 4 - Reset and homing sequences for u-law
@@ -984,6 +993,10 @@ static test_set_t itu_test_sets[] =
     }
 };
 
+/* ------------------------------------------------------------------------- */
+/* Helper functions                                                          */
+/* ------------------------------------------------------------------------- */
+
 static int hex_get(char *s)
 {
     int i;
@@ -995,29 +1008,24 @@ static int hex_get(char *s)
         x = *s++ - 0x30;
         if (x > 9)
             x -= 0x07;
-        /*endif*/
         if (x > 15)
             x -= 0x20;
-        /*endif*/
         if (x < 0  ||  x > 15)
             return -1;
-        /*endif*/
         value <<= 4;
         value |= x;
     }
-    /*endfor*/
     return value;
 }
-/*- End of function --------------------------------------------------------*/
 
-static int get_vector(FILE *file, uint8_t vec[])
+static int get_vector(void *file, uint8_t vec[])
 {
     char buf[132 + 1];
     char *s;
     int i;
     int value;
 
-    while (fgets(buf, 133, file))
+    while (TEST_GETS(buf, sizeof(buf), (FILE *)file))
     {
         s = buf;
         i = 0;
@@ -1026,53 +1034,59 @@ static int get_vector(FILE *file, uint8_t vec[])
             vec[i++] = value;
             s += 2;
         }
-        /*endwhile*/
         return i;
     }
-    /*endwhile*/
     return 0;
 }
-/*- End of function --------------------------------------------------------*/
 
+/*!
+ * Load a test vector file.
+ * \param file   Name of the file to read.
+ * \param buf    Buffer to store the data.
+ * \param max_len Maximum number of values to store.
+ * \return The total number of values read, or negative error code.
+ */
 static int get_test_vector(const char *file, uint8_t buf[], int max_len)
 {
     int octets;
     int i;
     int sum;
-    FILE *infile;
+    void *infile;
 
-    /*Supress warning*/
     (void)max_len;
 
-    if ((infile = fopen(file, "r")) == NULL)
+    if ((infile = TEST_OPEN(file, "r")) == NULL)
     {
-        fprintf(stderr, "    Failed to open '%s'\n", file);
-        exit(2);
+        TEST_PRINTF("[ERROR]: Failed to open '%s'\n", file);
+        return -1;
     }
-    /*endif*/
     octets = 0;
     while ((i = get_vector(infile, buf + octets)) > 0)
         octets += i;
-    /*endwhile*/
-    fclose(infile);
+    TEST_CLOSE(infile);
     /* The last octet is a sumcheck, so the real data octets are one less than
        the total we have */
     octets--;
     /* Test the checksum */
     for (sum = i = 0;  i < octets;  i++)
         sum += buf[i];
-    /*endfor*/
-    if (sum%255 != (int) buf[i])
+    if (sum % 255 != (int) buf[i])
     {
-        fprintf(stderr, "    Sumcheck failed in '%s' - %x %x\n", file, sum%255, buf[i]);
-        exit(2);
+        TEST_PRINTF("[ERROR]: Sumcheck failed in '%s' - %x %x\n", file, sum % 255, buf[i]);
+        return -2;
     }
-    /*endif*/
     return octets;
 }
-/*- End of function --------------------------------------------------------*/
 
-static void itu_compliance_tests(void)
+/* ------------------------------------------------------------------------- */
+/* Public function                                                           */
+/* ------------------------------------------------------------------------- */
+
+/*!
+ * Perform all ITU-T G.726 compliance tests.
+ * \return 0 on success, negative error code on failure.
+ */
+int itu_compliance_tests(void)
 {
     g726_state_t enc_state;
     g726_state_t dec_state;
@@ -1085,23 +1099,24 @@ static void itu_compliance_tests(void)
     int samples;
     int conditioning_adpcm;
     int adpcm;
+    int result;
 
     len2 = 0;
     conditioning_samples = 0;
     for (test = 0;  itu_test_sets[test].rate;  test++)
     {
-        printf("Test %2d: '%s' + '%s'\n"
-               "      -> '%s' + '%s'\n"
-               "      -> '%s' [%d, %d, %d]\n",
-               test,
-               itu_test_sets[test].conditioning_pcm_file,
-               itu_test_sets[test].pcm_file,
-               itu_test_sets[test].conditioning_adpcm_file,
-               itu_test_sets[test].adpcm_file,
-               itu_test_sets[test].output_file,
-               itu_test_sets[test].rate,
-               itu_test_sets[test].compression_law,
-               itu_test_sets[test].decompression_law);
+        TEST_PRINTF("Test %2d: '%s' + '%s'\n"
+                    "      -> '%s' + '%s'\n"
+                    "      -> '%s' [%d, %d, %d]\n",
+                    test,
+                    itu_test_sets[test].conditioning_pcm_file,
+                    itu_test_sets[test].pcm_file,
+                    itu_test_sets[test].conditioning_adpcm_file,
+                    itu_test_sets[test].adpcm_file,
+                    itu_test_sets[test].output_file,
+                    itu_test_sets[test].rate,
+                    itu_test_sets[test].compression_law,
+                    itu_test_sets[test].decompression_law);
         if (itu_test_sets[test].compression_law != G726_ENCODING_NONE)
         {
             /* Test the encode side */
@@ -1109,36 +1124,43 @@ static void itu_compliance_tests(void)
             if (itu_test_sets[test].conditioning_pcm_file[0])
             {
                 conditioning_samples = get_test_vector(itu_test_sets[test].conditioning_pcm_file, xlaw, MAX_TEST_VECTOR_LEN);
-                printf("Test %d: Homing %d samples at %dbps\n", test, conditioning_samples, itu_test_sets[test].rate);
+                if (conditioning_samples < 0)
+                    return conditioning_samples;
+                TEST_PRINTF("Test %d: Homing %d samples at %dbps\n", test, conditioning_samples, itu_test_sets[test].rate);
             }
             else
             {
                 conditioning_samples = 0;
             }
-            /*endif*/
             samples = get_test_vector(itu_test_sets[test].pcm_file, xlaw + conditioning_samples, MAX_TEST_VECTOR_LEN);
-            memcpy(itudata, xlaw, samples + conditioning_samples);
-            printf("Test %d: Compressing %d samples at %dbps\n", test, samples, itu_test_sets[test].rate);
+            if (samples < 0)
+                return samples;
+            memcpy(itudata, xlaw, conditioning_samples + samples);
+            TEST_PRINTF("Test %d: Compressing %d samples at %dbps\n", test, samples, itu_test_sets[test].rate);
             len2 = g726_encode(&enc_state, adpcmdata, itudata, conditioning_samples + samples);
         }
-        /*endif*/
+
         /* Test the decode side */
         g726_init(&dec_state, itu_test_sets[test].rate, itu_test_sets[test].decompression_law, G726_PACKING_NONE);
         if (itu_test_sets[test].conditioning_adpcm_file[0])
         {
             conditioning_adpcm = get_test_vector(itu_test_sets[test].conditioning_adpcm_file, unpacked, MAX_TEST_VECTOR_LEN);
-            printf("Test %d: Homing %d octets at %dbps\n", test, conditioning_adpcm, itu_test_sets[test].rate);
+            if (conditioning_adpcm < 0)
+                return conditioning_adpcm;
+            TEST_PRINTF("Test %d: Homing %d octets at %dbps\n", test, conditioning_adpcm, itu_test_sets[test].rate);
         }
         else
         {
             conditioning_adpcm = 0;
         }
-        /*endif*/
         adpcm = get_test_vector(itu_test_sets[test].adpcm_file, unpacked + conditioning_adpcm, MAX_TEST_VECTOR_LEN);
+        if (adpcm < 0)
+            return adpcm;
+
         if (itu_test_sets[test].compression_law != G726_ENCODING_NONE)
         {
             /* Test our compressed version against the reference compressed version */
-            printf("Test %d: Compressed data check - %d/%d octets\n", test, conditioning_adpcm + adpcm, len2);
+            TEST_PRINTF("Test %d: Compressed data check - %d/%d octets\n", test, conditioning_adpcm + adpcm, len2);
             if (conditioning_adpcm + adpcm == len2)
             {
                 for (bad_samples = 0, i = conditioning_samples;  i < len2;  i++)
@@ -1146,35 +1168,32 @@ static void itu_compliance_tests(void)
                     if (adpcmdata[i] != unpacked[i])
                     {
                         bad_samples++;
-                        printf("Test %d: Compressed mismatch %d %x %x\n", test, i, adpcmdata[i], unpacked[i]);
+                        TEST_PRINTF("Test %d: Compressed mismatch %d %x %x\n", test, i, adpcmdata[i], unpacked[i]);
                     }
-                    /*endif*/
                 }
-                /*endfor*/
                 if (bad_samples > 0)
                 {
-                    printf("Test failed\n");
-                    exit(2);
+                    TEST_PRINTF("Test failed\n");
+                    return -4;
                 }
-                /*endif*/
-                printf("Test passed\n");
+                TEST_PRINTF("Test passed\n");
             }
             else
             {
-                printf("Test %d: Length mismatch - ref = %d, processed = %d\n", test, conditioning_adpcm + adpcm, len2);
-                exit(2);
+                TEST_PRINTF("Test %d: Length mismatch - ref = %d, processed = %d\n", test, conditioning_adpcm + adpcm, len2);
+                return -3;
             }
-            /*endif*/
         }
-        /*endif*/
 
         len3 = g726_decode(&dec_state, outdata, unpacked, conditioning_adpcm + adpcm);
 
         /* Get the output reference data */
         samples = get_test_vector(itu_test_sets[test].output_file, xlaw, MAX_TEST_VECTOR_LEN);
+        if (samples < 0)
+            return samples;
         memcpy(itu_ref, xlaw, samples);
         /* Test our decompressed version against the reference decompressed version */
-        printf("Test %d: Decompressed data check - %d/%d samples\n", test, samples, len3 - conditioning_adpcm);
+        TEST_PRINTF("Test %d: Decompressed data check - %d/%d samples\n", test, samples, len3 - conditioning_adpcm);
         if (samples == len3 - conditioning_adpcm)
         {
             for (bad_samples = 0, i = 0;  i < len3;  i++)
@@ -1182,36 +1201,23 @@ static void itu_compliance_tests(void)
                 if (itu_ref[i] != ((uint8_t *) outdata)[i + conditioning_adpcm])
                 {
                     bad_samples++;
-                    printf("Test %d: Decompressed mismatch %d %x %x\n", test, i, itu_ref[i], ((uint8_t *) outdata)[i + conditioning_adpcm]);
+                    TEST_PRINTF("Test %d: Decompressed mismatch %d %x %x\n", test, i, itu_ref[i], ((uint8_t *) outdata)[i + conditioning_adpcm]);
                 }
-                /*endif*/
             }
-            /*endfor*/
             if (bad_samples > 0)
             {
-                printf("Test failed\n");
-                exit(2);
+                TEST_PRINTF("Test failed\n");
+                return -4;
             }
-            /*endif*/
-            printf("Test passed\n");
+            TEST_PRINTF("Test passed\n");
         }
         else
         {
-            printf("Test %d: Length mismatch - ref = %d, processed = %d\n", test, samples, len3 - conditioning_adpcm);
-            exit(2);
+            TEST_PRINTF("Test %d: Length mismatch - ref = %d, processed = %d\n", test, samples, len3 - conditioning_adpcm);
+            return -3;
         }
-        /*endif*/
     }
-    /*endfor*/
 
-    printf("Tests passed.\n");
-}
-/*- End of function --------------------------------------------------------*/
-
-int main(void)
-{
-    itu_compliance_tests();
+    TEST_PRINTF("Tests passed.\n");
     return 0;
 }
-/*- End of function --------------------------------------------------------*/
-/*- End of file ------------------------------------------------------------*/
