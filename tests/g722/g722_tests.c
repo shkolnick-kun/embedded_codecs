@@ -333,8 +333,9 @@ int itu_compliance_tests(void)
             if (len_data < 0)
                 return -1;
 
-            /*We do in here as itu_data is alias of itu_ref_upper!!!*/
-
+            /*===============================================================================================*/
+            /* We must do it here as itu.data is alias of itu.ref_upper!!!*/
+            /*===============================================================================================*/
             /* Find the active region */
             for (i = 0;  i < len_data;  i++)
             {
@@ -353,6 +354,7 @@ int itu_compliance_tests(void)
                but the actual G.722 bytes are placed differently per mode. */
             for (k = 0;  k < len;  k++)
                 compressed[k] = itu.data[k + i] >> ((mode == 3)  ?  10  :  (mode == 2)  ?  9  :  8);
+            /*===============================================================================================*/
 
             /* Load lower band reference (mode dependent) */
             len_comp_lower = get_test_vector(decode_test_files[file + mode], itu_ref, MAX_TEST_VECTOR_LEN);
