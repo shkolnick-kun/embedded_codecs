@@ -93,13 +93,11 @@
 #define MAX_TEST_VECTOR_LEN 16500
 
 /*We don't have much RAM on MCU so we must use aliasing...*/
-static union {
-    /*! Input data buffer (16-bit PCM samples) */
-    int16_t data[MAX_TEST_VECTOR_LEN];
+/*! Input data buffer (16-bit PCM samples) */
+#define itu_data ((int16_t *)itu_ref_upper) /*If you want memory safety use Fil-C, LOL!*/
 
-    /*! Reference output data (upper band) */
-    uint16_t ref_upper[MAX_TEST_VECTOR_LEN];
-} itu;
+/*! Reference output data (upper band) */
+uint16_t itu_ref_upper[MAX_TEST_VECTOR_LEN];
 /*! Reference output data (lower band) */
 static uint16_t itu_ref[MAX_TEST_VECTOR_LEN];
 /*! Compressed G.722 data */
@@ -263,7 +261,7 @@ int itu_compliance_tests(void)
         TEST_PRINTF("Testing %s -> %s\n", encode_test_files[file], encode_test_files[file + 1]);
 
         /* Load input PCM data */
-        len_data = get_test_vector(encode_test_files[file], (uint16_t *) itu.data, MAX_TEST_VECTOR_LEN);
+        len_data = get_test_vector(encode_test_files[file], (uint16_t *) itu_data, MAX_TEST_VECTOR_LEN);
         if (len_data < 0)
             return -1;
         /* Load reference encoded data */
@@ -280,12 +278,12 @@ int itu_compliance_tests(void)
         /* Find the active region (between start/stop markers) */
         for (i = 0;  i < len_data;  i++)
         {
-            if ((itu.data[i] & 1) == 0)
+            if ((itu_data[i] & 1) == 0)
                 break;
         }
         for (j = i;  j < len_data;  j++)
         {
-            if ((itu.data[j] & 1))
+            if ((itu_data[j] & 1))
                 break;
         }
         len = j - i;
@@ -293,7 +291,7 @@ int itu_compliance_tests(void)
         /* Encode using the special ITU test mode (QMF bypassed) */
         enc_state = g722_encode_init(NULL, 64000, 0);
         enc_state->itu_test_mode = true;
-        len2 = g722_encode(enc_state, compressed, itu.data + i, len);
+        len2 = g722_encode(enc_state, compressed, itu_data + i, len);
 
         /* Compare with the reference */
         j = 0;
@@ -329,22 +327,22 @@ int itu_compliance_tests(void)
                    decode_test_files[file + 4]);
 
             /* Load compressed input data */
-            len_data = get_test_vector(decode_test_files[file], (uint16_t *) itu.data, MAX_TEST_VECTOR_LEN);
+            len_data = get_test_vector(decode_test_files[file], (uint16_t *) itu_data, MAX_TEST_VECTOR_LEN);
             if (len_data < 0)
                 return -1;
 
             /*===============================================================================================*/
-            /* We must do it here as itu.data is alias of itu.ref_upper!!!*/
+            /* We must do it here as itu_data is alias of itu_ref_upper!!!*/
             /*===============================================================================================*/
             /* Find the active region */
             for (i = 0;  i < len_data;  i++)
             {
-                if ((itu.data[i] & 1) == 0)
+                if ((itu_data[i] & 1) == 0)
                     break;
             }
             for (j = i;  j < len_data;  j++)
             {
-                if ((itu.data[j] & 1))
+                if ((itu_data[j] & 1))
                     break;
             }
             len = j - i;
@@ -353,7 +351,7 @@ int itu_compliance_tests(void)
                The reference files store compressed data in 16‑bit words,
                but the actual G.722 bytes are placed differently per mode. */
             for (k = 0;  k < len;  k++)
-                compressed[k] = itu.data[k + i] >> ((mode == 3)  ?  10  :  (mode == 2)  ?  9  :  8);
+                compressed[k] = itu_data[k + i] >> ((mode == 3)  ?  10  :  (mode == 2)  ?  9  :  8);
             /*===============================================================================================*/
 
             /* Load lower band reference (mode dependent) */
@@ -361,7 +359,7 @@ int itu_compliance_tests(void)
             if (len_comp_lower < 0)
                 return -1;
             /* Load upper band reference (same for all modes) */
-            len_comp_upper = get_test_vector(decode_test_files[file + 4], itu.ref_upper, MAX_TEST_VECTOR_LEN);
+            len_comp_upper = get_test_vector(decode_test_files[file + 4], itu_ref_upper, MAX_TEST_VECTOR_LEN);
             if (len_comp_upper < 0)
                 return -1;
 
@@ -384,14 +382,14 @@ int itu_compliance_tests(void)
             {
                 if ((decompressed[k] & 0xFFFF) != (itu_ref[(k >> 1) + i] & 0xFFFF)
                     ||
-                    (decompressed[k + 1] & 0xFFFF) != (itu.ref_upper[(k >> 1) + i] & 0xFFFF))
+                    (decompressed[k + 1] & 0xFFFF) != (itu_ref_upper[(k >> 1) + i] & 0xFFFF))
                 {
                     TEST_PRINTF(">>> %6d %4x %4x %4x %4x\n",
                            k >> 1,
                            decompressed[k] & 0xFFFF,
                            decompressed[k + 1] & 0xFFFF,
                            itu_ref[(k >> 1) + i] & 0xFFFF,
-                           itu.ref_upper[(k >> 1) + i] & 0xFFFF);
+                           itu_ref_upper[(k >> 1) + i] & 0xFFFF);
                     j++;
                 }
             }
