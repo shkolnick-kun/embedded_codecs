@@ -1,7 +1,6 @@
 # Introduction
 
-This repository contains two implementations, one in Fortran, another
-in C, for a [speech
+This repository contains C-implementation, for a [speech
 codec](https://en.wikipedia.org/wiki/Category:Speech_codecs) called
 LPC-10.  It can compress human speech audio to 2400 bits per second.
 Note that speech codecs are specialized for compressing audio
@@ -24,71 +23,6 @@ which uses a Linear predictive coding technique
 The original code (see below for more details) from which the code in
 this repository was derived appears to have been published in October
 1993 by the U.S. Department of Defense.
-
-
-# Compiling the code
-
-Tested on the following systems:
-
-+ Ubuntu 20.04 x86_64 with GCC 9.4.0
-+ Ubuntu 22.04 x86_64 with GCC 11.4.0
-+ Ubuntu 24.04 x86_64 with GCC 13.2.0
-+ Ubuntu 20.04 aarch64 with GCC 9.4.0
-  + Only small differences between expected vs actual test output for
-    these Ubuntu aarch64 processor tests, probably due to slightly
-    different floating-point instruction round-offs.
-+ Ubuntu 22.04 aarch64 with GCC 11.4.0
-+ Ubuntu 24.04 aarch64 with GCC 13.2.0
-+ macOS 12.7 x86_64 with clang 14.0.0
-+ macOS 13.6 arm64 with clang 15.0.0
-  + Slightly bigger differences between expected vs actual test output
-    for this macOS arm64 processor test, but still very close to it.
-
-```bash
-git clone https://github.com/jafingerhut/lpc10
-cd lpc10/lpc10-1.6/lpc55-C/lpc10
-make
-cd ..
-make
-```
-
-If all went well, there should be executables with these names in the
-directory `lpc10-1.6/lpc55-C`:
-
-+ `nuke`
-+ `unnuke`
-+ `nuke2`
-+ `unnuke2`
-
-
-# Testing the code
-
-Run these commands, after a successful build as described earlier:
-
-```bash
-cd lpc10/lpc10-1.6/data
-./run-make.sh
-```
-
-Here is what "perfect" output looks like on a little-endian system.
-It is OK if some decompressed samples have a small delta
-(i.e. difference) with the expected decompressed audio file.  On a
-big-endian system, perfect output looks the same, except all
-occurrences of the word "little" would be replaced with "big".
-
-```
-$ ./run-make.sh
-Endianness is: little
-../lpc55-C/nuke < dam9.little-endian.spd > dam9-compressed.bits
-../lpc55-C/unnuke < dam9-compressed.bits > dam9-uncompressed.little-endian.spd
-../lpc55-C/compare-raw-audio dam9-out.little-endian.spd dam9-uncompressed.little-endian.spd
-Delta   Number of samples that differed by delta from file 1 to 2
-------  ----------------------------------------
-     0  171900
-------  ----------------------------------------
-delta min=0  max=0  average=0.0
-```
-
 
 # History, copyright, and license
 
