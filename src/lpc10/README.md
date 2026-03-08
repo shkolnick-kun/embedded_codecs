@@ -61,7 +61,7 @@ free."
 If the above is all correct, then according to the enhancements I have
 made to the original code described below, I, John Andrew Fingerhut,
 claim copyright on the C implementation in the directories
-`lpc10-1.5/lpc55-C` and `lpc10-1.6/lpc55-C` of lpc10.github.7z, and
+`lpc10-1.5/lpc55-C` and `lpc10-1.6/lpc55-C` of lpc10.jaf.7z, and
 release it under the following license:
 
 + https://spdx.org/licenses/BSD-3-Clause.html
