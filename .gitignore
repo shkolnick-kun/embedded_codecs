@@ -75,7 +75,6 @@ __pycache__/
 *~
 *.orig
 *.swp
-*.7z
 
 # Data files #
 *.h5
